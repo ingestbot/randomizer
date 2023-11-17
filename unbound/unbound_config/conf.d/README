@@ -1,0 +1,4 @@
+
+Block list from https://big.oisd.nl/unbound
+
+ curl -o big.oisd.nl.conf https://big.oisd.nl/unbound
