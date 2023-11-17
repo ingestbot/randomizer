@@ -1,0 +1,39 @@
+version: "3"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8000:8000/tcp # control server - https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+      - 8008:8888/tcp # HTTP proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
+      - 9999:9999/tcp # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md#internal-healthcheck
+    volumes:
+      - /usr/local/docker/gluetun/gluetun_config:/gluetun
+    environment:
+      - TZ=Etc/UTC
+      #
+      # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/healthcheck.md
+      #
+      - HEALTH_SERVER_ADDRESS=0.0.0.0:9999
+      #
+      # providers - https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
+      # 
+      - VPN_TYPE=wireguard
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
+      #
+      # server list update - https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
+      #
+      - UPDATER_PERIOD=1h
+      #
+      # http proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md 
+      #
+      - HTTPPROXY=on
+      - HTTPPROXY_STEALTH=on

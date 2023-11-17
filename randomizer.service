@@ -1,0 +1,15 @@
+##
+## see: Systemd Unit configuration logic -- http://man7.org/linux/man-pages/man5/systemd.unit.5.html for more details
+##
+## /etc/systemd/system/randomizer.service
+##
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/randomizer
+User=root
+Group=root
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
