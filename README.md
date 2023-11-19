@@ -46,6 +46,26 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 `influxdb_enable`: True to support InfluxDB.  
 `container_name`: This name should match `container_name` given in `docker-compose.yml`   
 
+## Example Architecture
+
+
+This is one of many examples of using multiple VPN instances in a given environment.
+
+- LAN: 192.168.1.0/24
+    - Consists of a mix of mobile devices, desktops/laptops, and virtual machines
+    - All devices in this network use an HTTP/HTTPS proxy of the assigned fronted in HAProxy (eg, 192.168.1.100:8118)
+- HAProxy: 192.168.1.100
+    - Acts as load balancer and distribution to multiple Gluetun VPN instances
+    - In this example port 8118 is the listening HTTP/HTTPS proxy
+    - See the configuration example [haproxy.cfg](haproxy/haproxy.cfg)
+- Virtual Machines: 192.168.20.10, 192.168.30.10
+    - Separate subnets of 192.168.20/24 and 192.168.30/24 are optional
+    - Each virtual machine contains a running randomizer and Docker container(s)
+    - Outbound IP addresses 23.11.82.103, 201.32.11.201 are randomly assigned based on VPN provider(s) configured in gluetun and frequency of rotation
+
+
+![gluetun_vpn_randomizer.png](images/gluetun_vpn_randomizer.png)
+
 ## Notes
 - VPN Service: Temporary VPN service can be obtained via https://freevpn.us. See [docker-compose.freevpn.us.yml](docker-compose.freevpn.us.yml) for details.
 - Currently, randomizer is biased towards Wireguard. OpenVPN may be supported in the future, particularly if there is a demand for it.
