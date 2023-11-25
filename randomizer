@@ -39,50 +39,51 @@ import os
 import sys
 import re
 import glob
+import yaml
 
 import paho.mqtt.client as mqtt_client
 from requests import ConnectionError
 from influxdb import InfluxDBClient
 
 my_hostname = socket.gethostname()
-#
-# debug increases verbosity of logging and 
-# frequency of rotation
-#
-debug = True
-#
-# Rotate multiple VPN providers
-#
-shuffle_vpn_provider = True
-#
-# MQTT
-#
-mqtt_enable = True
-mqtt_broker = 'mqtt.example.com'
-mqtt_topic_pub = 'proxies/' + my_hostname
-mqtt_topic_sub = 'proxies/#'
-# how often to publish details to mqtt (in seconds)
-ttime_mqtt_pub = 900
-checkup_and_pub_interval = ttime_mqtt_pub
+
+config = yaml.safe_load(open("/usr/local/etc/randomizer.yml"))
+
+debug = config['debug']
+
+shuffle_vpn_provider = config['shuffle_vpn_provider']
+
+mqtt_enable = config['mqtt_enable']
+mqtt_broker = config['mqtt_broker']
+mqtt_topic_pub = config['mqtt_topic_pub'] + my_hostname
+mqtt_topic_sub = config['mqtt_topic_sub']
+
+ttime_mqtt_pub = config['ttime_mqtt_pub']
 ttime_loop_sleep = ttime_mqtt_pub - 60
-#
-# InfluxDB
-#
-influxdb_enable = True
-influxdb_host = 'influxdb.example.com'
-influxdb_port = 8086
-influxdb_user = 'influx_user'
-influxdb_password = 'password'
-influxdb_database = 'influx_db'
-influxdb_measurement = 'vpn_tracker'
-#
-# Gluetun
-#
-container_name = 'gluetun'
-gluetun_healthcheck_port = 6666
-gluetun_control_port = 8000
-gluetun_path = '/usr/local/docker/gluetun'
+
+influxdb_enable = config['influxdb_enable']
+influxdb_host = config['influxdb_host']
+influxdb_port = config['influxdb_port']
+influxdb_user = config['influxdb_user']
+influxdb_password = config['influxdb_password']
+influxdb_database = config['influxdb_database']
+influxdb_measurement = config['influxdb_measurement']
+
+container_name = config['container_name']
+gluetun_healthcheck_port = config['gluetun_healthcheck_port']
+gluetun_control_port = config['gluetun_control_port']
+gluetun_path = config['gluetun_path']
 gluetun_servers_json = os.path.join(gluetun_path, 'gluetun_config', 'servers.json')
+
+start_delay = config['start_delay']
+
+ttl_min = config['ttl_min']
+ttl_max = config['ttl_max']
+ttl_min_debug = config['ttl_min_debug']
+ttl_max_debug = config['ttl_max_debug']
+
+checkup_and_pub_interval = ttime_mqtt_pub
+
 #
 # Docker
 #
@@ -104,19 +105,6 @@ handler.setFormatter(formatter)
 l.addHandler(handler)
 if debug:
     l.setLevel(logging.DEBUG)
-#
-# Control parameters for randomizer
-#
-# delay the start of this thing specified in seconds
-start_delay = 5
-#
-# min and max range for random execution (in seconds)
-ttl_min = 7200
-ttl_max = 14400
-#
-if debug:
-    ttl_min = 1200
-    ttl_max = 2700
 
 
 def send_request(method=None, url=None, data=None, headers=None):

@@ -1,0 +1,49 @@
+#
+# debug increases verbosity of logging and frequency of rotation (ie, ttl_min_debug, ttl_max_debug)
+#
+debug: False
+#
+# Rotate multiple VPN providers
+#
+shuffle_vpn_provider: False
+#
+# MQTT - when mqtt_enable is False, the remaining mqtt_* variables are not used
+#
+mqtt_enable: False
+mqtt_broker: 'mqtt.example.com'
+mqtt_topic_pub: 'proxies/'
+mqtt_topic_sub: 'proxies/#'
+#
+# InfluxDB - when influxdb_enable is False, the remaining influxdb_* variables are not used
+#
+influxdb_enable: False
+influxdb_host: 'influxdb.example.com'
+influxdb_port: 8086
+influxdb_user: 'influx_user'
+influxdb_password: 'pa$$w0rd'
+influxdb_database: 'randomizerdb'
+influxdb_measurement: 'vpn_tracker'
+#
+# Gluetun
+#
+container_name: 'gluetun'
+gluetun_healthcheck_port: 6666
+gluetun_control_port: 8000
+gluetun_path: '/usr/local/docker/gluetun'
+#
+# Control parameters for randomizer
+#
+# delay the start of this thing specified in seconds
+start_delay: 5
+#
+# min and max range for random execution (in seconds)
+#
+ttl_min: 7200
+ttl_max: 14400
+ttl_min_debug: 1200
+ttl_max_debug: 2700
+#
+# how often to publish details to mqtt (in seconds)
+#
+ttime_mqtt_pub: 900
+checkup_and_pub_interval: ttime_mqtt_pub
