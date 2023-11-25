@@ -40,6 +40,9 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 
 ## Options
 
+Options are defined in a separate YML configuration file (see [randomizer.yml](randomizer.yml). The location of this file is defined in [randomizer](randomizer) by the main parameter `config`.
+
+
 `debug`: Increases verbosity of logging and frequency of rotation (see also Logging section and `ttime_min`, `ttime_max`)  
 `shuffle_vpn_provider`: True to support multiple VPN providers. False if single. Multiple VPN providers require multiple `.env.*` files   
 `mqtt_enable`: True to support MQTT.  
