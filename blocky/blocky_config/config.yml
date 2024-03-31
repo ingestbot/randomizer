@@ -1,0 +1,102 @@
+##
+##  https://0xerr0r.github.io/blocky/v0.23/configuration/
+##
+#
+#log:
+#  level: debug
+#  level: trace
+#
+upstreams:
+  init:
+    strategy: fast
+  strategy: parallel_best
+  groups:
+    default:
+      ##
+      ## https://www.ipfire.org/docs/dns/public-servers
+      ## https://dnsprivacy.org/public_resolvers
+      ##
+      #
+      # https://res3.digitale-gesellschaft.ch/
+      #
+      - tcp-tls:dns.digitale-gesellschaft.ch:853
+      - https://dns.digitale-gesellschaft.ch/dns-query
+      #
+      # cloudflare - https://developers.cloudflare.com/1.1.1.1/
+      #
+      - tcp-tls:1.1.1.1:853
+      - https://cloudflare-dns.com/dns-query
+      #
+      # https://www.quad9.net
+      #
+      - https://dns.quad9.net/dns-query
+      - tcp-tls:dns.quad9.net
+      #
+      # https://digitalcourage.de
+      #
+      - tcp-tls:dns3.digitalcourage.de:853
+      #
+      # https://www.dns-ga.de/server-info.html
+      #
+      - tcp-tls:dot.dns-ga.com
+      - https://doh.dns-ga.com/query
+      #
+      # https://blog.uncensoreddns.org/dns-servers/
+      #
+      - tcp-tls:anycast.uncensoreddns.org:853
+      - https://anycast.uncensoreddns.org/dns-query
+      #
+      # https://controld.com
+      #
+      - tcp-tls:p0.freedns.controld.com
+      - https://freedns.controld.com/p0
+      #
+      # https://my.nextdns.io
+      #
+      - tcp-tls:bd4842.dns.nextdns.io
+      - https://dns.nextdns.io/bd4842
+
+blocking:
+  blackLists:
+    ads:
+      - local.blocks.txt
+      - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+      - http://sysctl.org/cameleon/hosts
+      - https://big.oisd.nl/domainswild
+  whiteLists:
+    ads:
+      - local.allow.txt
+  clientGroupsBlock:
+    default:
+      - ads
+  loading:
+    concurrency: 10
+
+bootstrapDns: 1.1.1.1
+
+prometheus:
+  enable: true
+
+filtering:
+  queryTypes:
+    - AAAA
+
+fqdnOnly:
+  enable: true
+
+ports:
+  dns: 53
+  http: 4000
+
+caching:
+  minTime: 25m
+  maxTime: 40m
+  prefetching: true
+
+redis:
+  address: 192.168.1.25:6379
+
+queryLog:
+  type: mysql
+  target: db_user:db_password@tcp(db_host_or_ip:3306)/db_user?charset=utf8mb4&parseTime=True&loc=Local
+  logRetentionDays: 7

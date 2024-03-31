@@ -1,0 +1,6 @@
+iptables -A OUTPUT -p tcp -d 192.168.1.25 --dport 3306 -j ACCEPT
+iptables -A INPUT -p tcp -s 192.168.1.25 --sport 3306 -j ACCEPT
+iptables -A OUTPUT -p tcp -d 192.168.1.25 --dport 6379 -j ACCEPT
+iptables -A INPUT -p tcp -s 192.168.1.25 --sport 6379 -j ACCEPT
+iptables -A OUTPUT -d 192.168.1.0/24 -j DROP
+iptables -A INPUT -s 192.168.1.0/24 -j DROP

@@ -1,0 +1,5 @@
+recaptcha.google.com
+www.recaptcha.net
+www.google.com
+maps.google.com
+youtube.com

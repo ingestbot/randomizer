@@ -1,0 +1,97 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    restart: always
+    dns:
+      - 127.0.0.1
+    networks:
+      - gluetun_net
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8000:8000/tcp # control server - https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+      - 8008:8888/tcp # HTTP proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
+      - 6666:9999/tcp # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md#internal-healthcheck
+      - 8053:53/tcp # blocky
+      - 8053:53/udp # blocky
+      - 9110:4000/tcp   # blocky prometheus exporter
+    volumes:
+      - /usr/local/docker/gluetun/gluetun_config:/gluetun
+      - /usr/local/docker/gluetun/gluetun_config/post-rules.txt:/iptables/post-rules.txt
+
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+
+    environment:
+      # - LOG_LEVEL=debug
+      - TZ=Etc/UTC
+      #
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/firewall.md
+      #
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24
+      # - FIREWALL_DEBUG=on
+      #
+      # https://github.com/qdm12/gluetun/issues/2047
+      #
+      ### - PUBLICIP_API=ip2location
+      #
+      # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/healthcheck.md
+      #
+      - HEALTH_TARGET_ADDRESS=1.1.1.1:443
+      - HEALTH_VPN_DURATION_INITIAL=10s
+      - HEALTH_VPN_DURATION_ADDITION=7s
+      - HEALTH_SUCCESS_WAIT_DURATION=7s
+      - HEALTH_SERVER_ADDRESS=0.0.0.0:9999
+      #
+      # providers - https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
+      #
+      - VPN_TYPE=wireguard
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
+      #
+      # server list update - https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
+      #
+      - UPDATER_PERIOD=3h
+      #
+      # http proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
+      #
+      - HTTPPROXY=on
+      - HTTPPROXY_STEALTH=on
+      #
+      # DNS
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/dns.md
+      #
+      - DOT=off
+      - DNS_KEEP_NAMESERVER=on
+
+  blocky:
+    image: spx01/blocky
+    container_name: blocky
+    #
+    # https://github.com/0xERR0R/blocky/discussions/1417
+    #
+    restart: always
+    network_mode: "service:gluetun"
+
+    volumes:
+      # Optional to synchronize the log timestamp with host
+      - /etc/localtime:/etc/localtime:ro
+      # config file
+      - ./blocky_config/config.yml:/app/config.yml
+      - ./blocky_config/local.blocks.txt:/app/local.blocks.txt
+      - ./blocky_config/local.allow.txt:/app/local.allow.txt
+
+networks:
+  gluetun_net:
+    name: gluetun_net
+    driver_opts:
+      com.docker.network.bridge.name: br-gluetun
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24

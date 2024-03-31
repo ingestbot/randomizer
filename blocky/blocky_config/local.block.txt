@@ -1,0 +1,6 @@
+iprofiles.apple.com
+mdmenrollment.apple.com
+deviceenrollment.apple.com
+gdmf.apple.com
+acmdm.apple.com
+albert.apple.com

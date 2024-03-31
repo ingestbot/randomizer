@@ -69,6 +69,16 @@ This is one of many examples of using multiple VPN instances in a given environm
 
 ![gluetun_vpn_randomizer.png](images/gluetun_vpn_randomizer.png)
 
+## DNS
+
+### Unbound
+
+An example of using Gluetun with Unbound is shown in [/unbound](/unbound)
+
+### Blocky
+
+An example of using Gluetun with Blocky is shown in [/blocky](/blocky)
+
 ## Notes
 - VPN Service: Temporary VPN service can be obtained via https://freevpn.us. See [docker-compose.freevpn.us.yml](docker-compose.freevpn.us.yml) for details.
 - Currently, randomizer is biased towards Wireguard. OpenVPN may be supported in the future, particularly if there is a demand for it.
