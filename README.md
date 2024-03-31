@@ -73,11 +73,11 @@ This is one of many examples of using multiple VPN instances in a given environm
 
 ### Unbound
 
-An example of using Gluetun with Unbound is shown in [/unbound](/unbound)
+An example of using Gluetun with [Unbound](https://nlnetlabs.nl/projects/unbound/about/) is shown in [/unbound](/unbound)
 
 ### Blocky
 
-An example of using Gluetun with Blocky is shown in [/blocky](/blocky)
+An example of using Gluetun with [Blocky](https://0xerr0r.github.io/blocky/) is shown in [/blocky](/blocky)
 
 ## Notes
 - VPN Service: Temporary VPN service can be obtained via https://freevpn.us. See [docker-compose.freevpn.us.yml](docker-compose.freevpn.us.yml) for details.
