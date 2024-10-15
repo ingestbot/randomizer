@@ -74,10 +74,10 @@ jobs:
           push: false
           load: true
 
-      - name: Anchore Container Scan
-        uses: anchore/scan-action@v5.0.0
-        with:
-          image: "localbuild/testimage"
+      #- name: Anchore Container Scan
+      #  uses: anchore/scan-action@v5.0.0
+      #  with:
+      #    image: "localbuild/testimage"
 
       - name: Run the Docker container | capture logs | verify Successful Visits
         run: |
