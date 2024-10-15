@@ -1,11 +1,17 @@
 #
 # debug increases verbosity of logging and frequency of rotation (ie, ttl_min_debug, ttl_max_debug)
 #
-debug: False
+debug: True
+#
+# Is this a docker container?
+is_docker_container: True 
+#
+# Set the hostname if docker container
+hostname: 'haha90.sfio.win'
 #
 # Rotate multiple VPN providers
 #
-shuffle_vpn_provider: False
+shuffle_vpn_provider: True
 #
 # MQTT - when mqtt_enable is False, the remaining mqtt_* variables are not used
 #
@@ -38,8 +44,12 @@ start_delay: 5
 #
 # min and max range for random execution (in seconds)
 #
-ttl_min: 7200
-ttl_max: 14400
+# ttl_min: 7200
+# ttl_max: 14400
+
+ttl_min: 30
+ttl_max: 120
+
 ttl_min_debug: 1200
 ttl_max_debug: 2700
 #

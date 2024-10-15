@@ -39,6 +39,7 @@ import sys
 import re
 import glob
 import yaml
+import argparse
 
 from datetime import datetime, timezone
 
@@ -48,9 +49,18 @@ from influxdb import InfluxDBClient
 
 my_hostname = socket.gethostname()
 
-config = yaml.safe_load(open("/usr/local/etc/randomizer.yml"))
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--config", metavar="-c", required=True, type=str, help="config file"
+)
+args = parser.parse_args()
+
+# config = yaml.safe_load(open("/usr/local/etc/randomizer.yml"))
+config = yaml.safe_load(open(args.config))
 
 debug = config['debug']
+
+hostname = config['hostname']
 
 shuffle_vpn_provider = config['shuffle_vpn_provider']
 
@@ -73,7 +83,12 @@ influxdb_measurement = config['influxdb_measurement']
 container_name = config['container_name']
 gluetun_healthcheck_port = config['gluetun_healthcheck_port']
 gluetun_control_port = config['gluetun_control_port']
-gluetun_path = config['gluetun_path']
+
+if config['is_docker_container']:
+    gluetun_path = '/app/gluetun'
+else:
+    gluetun_path = config['gluetun_path']
+
 gluetun_servers_json = os.path.join(gluetun_path, 'gluetun_config', 'servers.json')
 
 start_delay = config['start_delay']
@@ -99,8 +114,16 @@ client = docker.from_env()
 #
 l = logging.getLogger('randomizer')
 l.setLevel(logging.INFO)
-# handler = logging.StreamHandler(sys.stdout)
-handler = logging.handlers.SysLogHandler(address='/dev/log')
+
+#
+# If this is a docker container, send logging to STDOUT. Otherwise, log to
+# syslog.
+#
+if config['is_docker_container']:
+    handler = logging.StreamHandler(sys.stdout)
+else:
+    handler = logging.handlers.SysLogHandler(address='/dev/log')
+
 formatter = logging.Formatter('%(name)s %(funcName)s(): %(message)s')
 handler.setFormatter(formatter)
 l.addHandler(handler)
@@ -316,7 +339,7 @@ class vpn:
         pass
 
     def get_healthcheck(self):
-        health = send_request(method='get', url='http://localhost:' + str(gluetun_healthcheck_port))
+        health = send_request(method='get', url=f'http://{hostname}:' + str(gluetun_healthcheck_port))
         return health
 
     def restart_vpn(self):
@@ -332,19 +355,13 @@ class vpn:
         ##
         payload = {'status': 'stopped'}
         headers = {'Content-Type': 'application/json'}
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/openvpn/status', data=json.dumps(payload), headers=headers)
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/updater/status', data=json.dumps(payload), headers=headers)
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/openvpn/status', data=json.dumps(payload), headers=headers)
-        send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/vpn/status', data=json.dumps(payload), headers=headers)
+        send_request(method='put', url=f'http://{hostname}:'+ str(gluetun_control_port) +'/v1/vpn/status', data=json.dumps(payload), headers=headers)
 
         payload = {'status': 'running'}
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/openvpn/status', data=json.dumps(payload), headers=headers)
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/updater/status', data=json.dumps(payload), headers=headers)
-        # send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/openvpn/status', data=json.dumps(payload), headers=headers)
-        send_request(method='put', url='http://localhost:'+ str(gluetun_control_port) +'/v1/vpn/status', data=json.dumps(payload), headers=headers)
+        send_request(method='put', url=f'http://{hostname}:'+ str(gluetun_control_port) +'/v1/vpn/status', data=json.dumps(payload), headers=headers)
 
     def get_public_ip(self):
-        ipaddr_public = send_request(method='get', url='http://localhost:'+ str(gluetun_control_port) +'/v1/publicip/ip')
+        ipaddr_public = send_request(method='get', url=f'http://{hostname}:'+ str(gluetun_control_port) +'/v1/publicip/ip')
         return ipaddr_public
 
     def get_gw_name(self, ipaddr):
