@@ -1,5 +1,6 @@
 FROM python:alpine
 
+ENV RANDOMIZER_CONFIG=/app/randomizer.yml
 RUN adduser -D -H randomizer
 RUN mkdir /app && chown randomizer:randomizer /app
 # USER randomizer
@@ -17,8 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY randomizer .
 COPY randomizer.yml .
-# COPY docker-compose.yml . 
 
-# ENTRYPOINT ["sh", "-c"]
+ENTRYPOINT ["sh", "-c"]
 
-# CMD ["python /app/randomizer"]
+CMD ["python /app/randomizer --config $RANDOMIZER_CONFIG"]

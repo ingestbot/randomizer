@@ -1,0 +1,110 @@
+name: CI/CD Pipeline - randomizer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    #    permissions:
+    #      contents: read
+    #      packages: read
+    #      # To report GitHub Actions status checks
+    #      # statuses: write
+
+    env:
+      DOCKER_USERNAME: ingestbot
+      DOCKER_IMAGE_NAME: randomizer
+
+    steps:
+      - name: Set up environment variables
+        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
+
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        # run: pip install -r requirements-ci.txt
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@v3.82.8
+
+      #- name: Super-Linter
+      #  uses: super-linter/super-linter@v7.1.0
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #    VALIDATE_PYTHON_PYLINT: false
+      #    VALIDATE_JSCPD: false
+      #    # VALIDATE_MARKDOWN: false
+
+      #- name: Run tests
+      #  run: |
+      #    source venv/bin/activate
+      #    PYTHONPATH=. pytest tests/test_main.py -vv
+
+      - name: Docker Login
+        uses: docker/login-action@v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      #
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      #
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: build local container
+        uses: docker/build-push-action@v4
+        with:
+          tags: localbuild/testimage
+          push: false
+          load: true
+
+      - name: Anchore Container Scan
+        uses: anchore/scan-action@v5.0.0
+        with:
+          image: "localbuild/testimage"
+
+      - name: Run the Docker container | capture logs | verify Successful Visits
+        run: |
+          container_id=$(docker run -d localbuild/testimage)
+          timeout=180
+          interval=5
+          elapsed=0
+
+          while [ "$elapsed" -lt "$timeout" ]; do
+              if docker logs "$container_id" 2>&1 | grep -q "Starting randomizer"; then
+                  echo "PASS"
+                  exit 0
+              fi
+              sleep "$interval"
+              elapsed=$((elapsed + interval))
+          done
+
+          echo "FAIL: Expected logging not found within the timeout period."
+          docker logs "$container_id"
+          exit 1
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.SHORT_SHA }}
