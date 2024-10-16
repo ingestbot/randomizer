@@ -1,13 +1,16 @@
 FROM python:alpine
 
 ENV RANDOMIZER_CONFIG=/app/randomizer.yml
-RUN adduser -D -H randomizer
-RUN mkdir /app && chown randomizer:randomizer /app
-# USER randomizer
-USER root
 
+USER root
 RUN apk add --no-cache docker-cli-compose
 
+RUN addgroup -g 988 docker
+RUN adduser -D -H randomizer && \
+    adduser randomizer docker
+RUN mkdir /app && chown randomizer:randomizer /app
+
+USER randomizer
 WORKDIR /app
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD pgrep -f "randomizer" || exit 1
 
