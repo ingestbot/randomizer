@@ -15,7 +15,7 @@ A Gluetun VPN Randomizer
 
 Gluetun VPN Randomizer is a Python application and Docker container developed
 for the purpose of rotating VPN gateways from one or more VPN providers. This
-will change your outbound IP address, and optionally your VPN provider, on a
+will change your outbound IP address and optionally your VPN provider on a
 random basis within a given time period (eg, every 2-4 hours).
 
 Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
@@ -27,15 +27,15 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 - [Docker](https://docs.docker.com/engine/install)
 - [Docker Compose V2](https://docs.docker.com/compose/migrate)
 
-- Additional Requirements and Dependencies noted in [randomizer](randomizer)
+- Additional Requirements and Dependencies noted in `requirements.txt`
 
 ## Quick Start
 
 ### For both systemd and Docker
 
-- Get a functional [docker-compose.yml]
-  (examples/docker-compose/docker-compose.gluetun_basic.yml) working with Gluetun
-  (see the provided example).
+- Get a functional
+  [docker-compose.yml](examples/docker-compose/docker-compose.gluetun_basic.yml)
+  working with Gluetun (see the provided example).
   - eg, `/usr/local/docker/gluetun/docker-compose.yml`
 - Modify the provided [env.example](examples/env.example) and copy to the
   Gluetun path as `.env`.
@@ -76,15 +76,19 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 
 Options are defined in a separate YML configuration file (see
 [randomizer.yml](randomizer.yml). The location of this file is defined in
-[randomizer](randomizer) by the main parameter `config`.
+[randomizer](randomizer) by the main parameter `config`. For the Docker
+container, see `RANDOMIZER_CONFIG`
+([docker-compose.yml](examples/docker-compose/docker-compose.yml)
 
-`is_docker_container`: Set to True if using
-`debug`: Increases verbosity of logging and frequency of rotation (see also
-Logging section and `ttime_min`, `ttime_max`) `shuffle_vpn_provider`: True to
-support multiple VPN providers. False if single. Multiple VPN providers require
-multiple `.env.*` files `mqtt_enable`: True to support MQTT.
-`influxdb_enable`: True to support InfluxDB. `container_name`: This name should
-match `container_name` given in `docker-compose.yml`
+- `is_docker_container`: Set to True if using Docker container
+- `hostname`: Set to localhost if using systemd. Set to Docker host if container.
+- `debug`: Increases verbosity of logging and frequency of rotation (see also
+  Logging section and `ttime_min`, `ttime_max`)
+- `shuffle_vpn_provider`: True to support multiple VPN providers. False if
+  single. Multiple VPN providers require multiple `.env.*` files
+- `mqtt_enable`: True to support MQTT.
+- `influxdb_enable`: True to support InfluxDB.
+- `container_name`: This name should match `container_name` given in `docker-compose.yml`
 
 ## Example Architecture
 
