@@ -18,12 +18,16 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 
 ## Quick Start
 
-- Get a functional [docker-compose.yml](docker-compose.yml) working with Gluetun
+### For both systemd and Docker
+
+- Get a functional [docker-compose.yml]
+(examples/docker-compose/docker-compose.gluetun_basic.yml) working with Gluetun
   (see the provided example).
   - eg, `/usr/local/docker/gluetun/docker-compose.yml`
-- Modify the provided [env.example](env.example) and copy to the Gluetun path.
+- Modify the provided [env.example](examples/env.example) and copy to the
+  Gluetun path as `.env`.
   This provides values to the `environment:` parameters in
-  [docker-compose.yml](docker-compose.yml).
+  [docker-compose.yml](examples/docker-compose/docker-compose.yml).
   - eg, `/usr/local/docker/gluetun/.env`
 - Create a `gluetun_config` directory. This should be the same path defined in
   `volumes:`
@@ -32,12 +36,22 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
   after [supported Gluetun
   providers](https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers)
   - eg, `.env.ivpn`, `.env.mullvad`, etc.
+
+### Docker
+
+- See [docker-compose.yml](examples/docker-compose/docker-compose.yml)
+- Modify `randomizer` options (see [Options](#options) below)
+- Set `RANDOMIZER_CONFIG` to location of `randomizer.yml`
+- Bind mount files must be readable by user `randomizer/1000`
+
+### systemd
+
 - Copy [randomizer](randomizer) to a desired location and make it executable
   - `/usr/local/bin/randomizer`
   - `chmod 750 /usr/local/bin/randomizer`
 - Modify `randomizer` options (see [Options](#options) below)
 - To run as a systemd service, use the provided systemd unit file
-  [randomizer.service](randomizer.service)
+  [randomizer.service](examples/systemd/randomizer.service)
   - `/etc/systemd/system/randomizer.service`
   - `systemctl daemon-reload`
   - `systemctl status|stop|start randomizer`
@@ -51,6 +65,7 @@ Options are defined in a separate YML configuration file (see
 [randomizer.yml](randomizer.yml). The location of this file is defined in
 [randomizer](randomizer) by the main parameter `config`.
 
+`is_docker_container`: Set to True if using
 `debug`: Increases verbosity of logging and frequency of rotation (see also
 Logging section and `ttime_min`, `ttime_max`) `shuffle_vpn_provider`: True to
 support multiple VPN providers. False if single. Multiple VPN providers require
@@ -70,7 +85,7 @@ environment.
 - HAProxy: 192.168.1.100
   - Acts as load balancer and distribution to multiple Gluetun VPN instances
   - In this example port 8118 is the listening HTTP/HTTPS proxy
-  - See the configuration example [haproxy.cfg](haproxy/haproxy.cfg)
+  - See the configuration example [haproxy.cfg](examples/haproxy/haproxy.cfg)
 - Virtual Machines: 192.168.20.10, 192.168.30.10
   - Separate subnets of 192.168.20/24 and 192.168.30/24 are optional
   - Each virtual machine contains a running randomizer and Docker container(s)
@@ -85,12 +100,12 @@ environment.
 
 An example of using Gluetun with
 [Unbound](https://nlnetlabs.nl/projects/unbound/about/) is shown in
-[/unbound](/unbound)
+[/unbound](examples/unbound)
 
 ### Blocky
 
 An example of using Gluetun with [Blocky](https://0xerr0r.github.io/blocky/) is
-shown in [/blocky](/blocky)
+shown in [blocky](examples/blocky)
 
 ## Notes
 
