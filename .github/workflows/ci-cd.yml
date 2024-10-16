@@ -101,11 +101,16 @@ jobs:
           set +e  # Disable immediate exit on error
           container_id=$(docker run -d -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
           echo "Container ID: $container_id"
-          # Wait for the container to exit and capture logs
-          wait "$container_id" || {
-            echo "Container exited with status $?"
+
+          # Wait for the container to exit
+          exit_code=$(docker wait "$container_id")
+
+          echo "Container exited with status $exit_code"
+          # Capture logs if the container exited with an error
+          if [ "$exit_code" -ne 0 ]; then
+            echo "Fetching logs from container $container_id"
             docker logs "$container_id" || true
-          }
+          fi
 
       - name: Run the Docker container | capture logs | verify logging
         run: |
