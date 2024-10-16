@@ -87,12 +87,25 @@ jobs:
       #  with:
       #    image: "localbuild/testimage"
 
-      - name: Run Docker Container
+      #- name: Run Docker Container
+      #  id: run_container
+      #  run: |
+      #    # container_id=$(docker run -d localbuild/testimage)
+      #    container_id=$(docker run -d -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+      #    echo "Container ID: $container_id"
+      #    echo "::set-output name=id::$container_id"
+
+      - name: Run Docker Container with Logs Capture
         id: run_container
         run: |
-          container_id=$(docker run -d localbuild/testimage)
+          set +e  # Disable immediate exit on error
+          container_id=$(docker run -d -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
           echo "Container ID: $container_id"
-          echo "::set-output name=id::$container_id"
+          # Wait for the container to exit and capture logs
+          wait "$container_id" || {
+            echo "Container exited with status $?"
+            docker logs "$container_id" || true
+          }
 
       - name: Run the Docker container | capture logs | verify logging
         run: |
