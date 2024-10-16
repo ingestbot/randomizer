@@ -22,13 +22,13 @@ jobs:
       DOCKER_USERNAME: ingestbot
       DOCKER_IMAGE_NAME: randomizer
 
-    services:
-      docker:
-        image: docker:19.03.12
-        options: >-
-          --privileged
-          --name docker
-          -v /var/run/docker.sock:/var/run/docker.sock
+    #services:
+    #  docker:
+    #    image: docker:19.03.12
+    #    options: >-
+    #      --privileged
+    #      --name docker
+    #      -v /var/run/docker.sock:/var/run/docker.sock
 
     steps:
       - name: Set up environment variables
@@ -87,12 +87,20 @@ jobs:
       #  with:
       #    image: "localbuild/testimage"
 
-      - name: Run the Docker container | capture logs | verify Successful Visits
+      - name: Run Docker Container
+        id: run_container
         run: |
           container_id=$(docker run -d localbuild/testimage)
+          echo "Container ID: $container_id"
+          echo "::set-output name=id::$container_id"
+
+      - name: Run the Docker container | capture logs | verify logging
+        run: |
+          # container_id=$(docker run -d localbuild/testimage)
           timeout=180
           interval=5
           elapsed=0
+          container_id=${{ steps.run_container.outputs.id }}
 
           while [ "$elapsed" -lt "$timeout" ]; do
               if docker logs "$container_id" 2>&1 | grep -q "Starting randomizer"; then
@@ -106,6 +114,12 @@ jobs:
           echo "FAIL: Expected logging not found within the timeout period."
           docker logs "$container_id"
           exit 1
+
+      - name: Show Container Logs
+        run: |
+          container_id=${{ steps.run_container.outputs.id }}
+          echo "Container Logs:"
+          docker logs "$container_id" || true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
