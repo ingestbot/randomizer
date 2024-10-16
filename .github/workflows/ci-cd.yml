@@ -23,16 +23,21 @@ jobs:
       DOCKER_IMAGE_NAME: randomizer
 
     steps:
-
       - name: get user with UID 1000
         run: |
           getent passwd 1000
 
       - name: who am i and id
         run: |
-          echo $USER
+          echo "$USER"
           whoami
-          id $USER
+          id "$USER"
+
+      - name: Get Docker group ID
+        id: get_docker_gid
+        run: |
+          DOCKER_GID=$(getent group docker | cut -d: -f3)
+          echo "DOCKER_GID=${DOCKER_GID}" >> $GITHUB_ENV
 
       - name: Check Docker Socket
         run: ls -l /var/run/docker.sock || echo "Docker socket not found"
@@ -95,7 +100,8 @@ jobs:
 
       - name: Run the Docker container | capture logs | verify logs
         run: |
-          container_id=$(docker run -d  --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          # container_id=$(docker run -d  --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          container_id=$(docker run -d  --group-add $DOCKER_GID -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
           timeout=180
           interval=5
           elapsed=0
