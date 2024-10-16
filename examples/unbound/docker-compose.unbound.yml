@@ -1,0 +1,69 @@
+version: "3"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    dns:
+      - 127.0.0.1
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # control server
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+      - 8000:8000/tcp
+      # HTTP proxy
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
+      - 8008:8888/tcp
+      # healthcheck
+      # https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md#internal-healthcheck
+      - 9999:9999/tcp
+      # unbound
+      - 8053:53/tcp
+      # unbound
+      - 8053:53/udp
+    volumes:
+      - /usr/local/docker/gluetun/gluetun_config:/gluetun
+    environment:
+      - TZ=Etc/UTC
+      #
+      # healthcheck
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/healthcheck.md
+      #
+      - HEALTH_SERVER_ADDRESS=0.0.0.0:9999
+      #
+      # providers
+      # https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
+      #
+      - VPN_TYPE=wireguard
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
+      #
+      # server list update
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
+      #
+      - UPDATER_PERIOD=1h
+      #
+      # http proxy
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
+      #
+      - HTTPPROXY=on
+      - HTTPPROXY_STEALTH=on
+      #
+      # DNS
+      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/dns.md
+      #
+      - DOT=off
+      - DNS_KEEP_NAMESERVER=on
+
+  unbound:
+    image: "mvance/unbound:latest"
+    container_name: unbound
+    network_mode: "service:gluetun"
+    volumes:
+      - /usr/local/docker/gluetun/unbound_config/unbound.conf:/opt/unbound/etc/unbound/unbound.conf
+      - /usr/local/docker/gluetun/unbound_config/conf.d/:/opt/unbound/etc/unbound/conf.d/

@@ -3,8 +3,6 @@ services:
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
-    dns:
-      - 127.0.0.1
     cap_add:
       - NET_ADMIN
     devices:
@@ -13,8 +11,6 @@ services:
       - 8000:8000/tcp # control server - https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
       - 8008:8888/tcp # HTTP proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
       - 9999:9999/tcp # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md#internal-healthcheck
-      - 8053:53/tcp # unbound
-      - 8053:53/udp # unbound
     volumes:
       - /usr/local/docker/gluetun/gluetun_config:/gluetun
     environment:
@@ -41,17 +37,3 @@ services:
       #
       - HTTPPROXY=on
       - HTTPPROXY_STEALTH=on
-      #
-      # DNS
-      # https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/dns.md
-      #
-      - DOT=off
-      - DNS_KEEP_NAMESERVER=on
-
-  unbound:
-    image: "mvance/unbound:latest"
-    container_name: unbound
-    network_mode: "service:gluetun"
-    volumes:
-      - /usr/local/docker/gluetun/unbound_config/unbound.conf:/opt/unbound/etc/unbound/unbound.conf
-      - /usr/local/docker/gluetun/unbound_config/conf.d/:/opt/unbound/etc/unbound/conf.d/

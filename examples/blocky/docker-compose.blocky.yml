@@ -17,7 +17,7 @@ services:
       - 6666:9999/tcp # healthcheck - https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md#internal-healthcheck
       - 8053:53/tcp # blocky
       - 8053:53/udp # blocky
-      - 9110:4000/tcp   # blocky prometheus exporter
+      - 9110:4000/tcp # blocky prometheus exporter
     volumes:
       - /usr/local/docker/gluetun/gluetun_config:/gluetun
       - /usr/local/docker/gluetun/gluetun_config/post-rules.txt:/iptables/post-rules.txt

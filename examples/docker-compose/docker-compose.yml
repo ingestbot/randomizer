@@ -1,0 +1,24 @@
+##
+## https://github.com/ingestbot/randomizer
+##
+services:
+  randomizer:
+    image: randomizer
+    container_name: randomizer
+    network_mode: bridge
+    volumes:
+      - /usr/local/docker/gluetun:/app/gluetun
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=America/Los_Angeles
+
+      # - RANDOMIZER_CONFIG=/app/gluetun/randomizer.yml
+
+      #
+      # proxy is optional
+      #
+      - HTTP_PROXY=${http_proxy}
+      - HTTPS_PROXY=${https_proxy}
+      - NO_PROXY=${no_proxy}
+
+    restart: always
