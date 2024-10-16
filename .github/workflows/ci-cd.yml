@@ -22,14 +22,6 @@ jobs:
       DOCKER_USERNAME: ingestbot
       DOCKER_IMAGE_NAME: randomizer
 
-    #services:
-    #  docker:
-    #    image: docker:19.03.12
-    #    options: >-
-    #      --privileged
-    #      --name docker
-    #      -v /var/run/docker.sock:/var/run/docker.sock
-
     steps:
       - name: Set up environment variables
         run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
@@ -47,16 +39,6 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      #- name: get user with UID 1000
-      #  run: |
-      #    getent passwd 1000
-
-      #- name: who am i and id
-      #  run: |
-      #    echo $USER
-      #    whoami
-      #    id $USER
-
       #- name: TruffleHog OSS
       #  uses: trufflesecurity/trufflehog@v3.82.8
 
@@ -72,6 +54,12 @@ jobs:
       #  run: |
       #    source venv/bin/activate
       #    PYTHONPATH=. pytest tests/test_main.py -vv
+
+      - name: Docker Login
+        uses: docker/login-action@v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       #
       # https://github.com/marketplace/actions/docker-setup-buildx
@@ -91,37 +79,32 @@ jobs:
       #  with:
       #    image: "localbuild/testimage"
 
-      #- name: Run Docker Container
-      #  id: run_container
-      #  run: |
-      #    # container_id=$(docker run -d localbuild/testimage)
-      #    container_id=$(docker run -d -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
-      #    echo "Container ID: $container_id"
-      #    echo "::set-output name=id::$container_id"
-
-      #- name: Check Docker Socket
-      #  run: ls -l /var/run/docker.sock || echo "Docker socket not found"
-
-      - name: Run Docker Container
+      - name: Run the Docker container | capture logs | verify logs
         run: |
-          set +e  # Disable immediate exit on error
+          container_id=$(docker run -d  --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          timeout=180
+          interval=5
+          elapsed=0
 
-          container_id=$(docker run -d --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          while [ "$elapsed" -lt "$timeout" ]; do
+              if docker logs "$container_id" 2>&1 | grep -q "Starting randomizer"; then
+                  echo "PASS"
+                  exit 0
+              fi
+              sleep "$interval"
+              elapsed=$((elapsed + interval))
+          done
 
-          # container_id=$(docker run -d --privileged --group-add docker -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          echo "FAIL: expected logging not found within the timeout period."
+          docker logs "$container_id"
+          exit 1
 
-          # docker run -dit --name randomizer -v /var/run/docker.sock:/var/run/docker.sock randomizer
-          # container_id=$(docker run -dit -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
-          # container_id=$(docker run -dit --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
-
-          # docker exec -i $container_id ls -ld /var/run/docker.sock
-          # docker exec -i $container_id id
-          # docker exec -i $container_id docker ps
-
-          echo "Container ID: $container_id"
-          exit_code=$(docker wait "$container_id")
-          echo "Container exited with status $exit_code"
-          if [ "$exit_code" -ne 0 ]; then
-            echo "Fetching logs from container $container_id"
-            docker logs "$container_id" || true
-          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.SHORT_SHA }}
