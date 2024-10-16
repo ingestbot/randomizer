@@ -39,8 +39,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      #- name: TruffleHog OSS
-      #  uses: trufflesecurity/trufflehog@v3.82.8
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@v3.82.8
 
       #- name: Super-Linter
       #  uses: super-linter/super-linter@v7.1.0
@@ -74,10 +74,10 @@ jobs:
           push: false
           load: true
 
-      #- name: Anchore Container Scan
-      #  uses: anchore/scan-action@v5.0.0
-      #  with:
-      #    image: "localbuild/testimage"
+      - name: Anchore Container Scan
+        uses: anchore/scan-action@v5.0.0
+        with:
+          image: "localbuild/testimage"
 
       - name: Run the Docker container | capture logs | verify logs
         run: |
