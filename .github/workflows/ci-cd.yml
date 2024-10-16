@@ -47,13 +47,17 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      - name: Create user with UID 1000
+      - name: get user with UID 1000
         run: |
-          sudo useradd -m -u 1000 randomizer || true
+          getent passwd 1000
 
-      - name: Add user to Docker group
-        run: |
-          sudo usermod -aG docker randomizer
+      #- name: Create user with UID 1000
+      #  run: |
+      #    sudo useradd -m -u 1000 randomizer || true
+
+      #- name: Add user to Docker group
+      #  run: |
+      #    sudo usermod -aG docker randomizer
 
       #- name: TruffleHog OSS
       #  uses: trufflesecurity/trufflehog@v3.82.8
