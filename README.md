@@ -126,8 +126,9 @@ shown in [blocky](examples/blocky)
 
 ## Notes
 
-- VPN Service: Temporary VPN service can be obtained via <https://freevpn.us>. See
-  [docker-compose.freevpn.us.yml](examples/docker-compose/docker-compose.freevpn.us.yml) for details.
+- VPN Service: Temporary VPN service can be obtained via
+  <https://freevpn.us>. See [docker-compose.freevpn.us.yml](examples/docker-compose/docker-compose.freevpn.us.yml)
+  for details.
 - Currently, randomizer is biased towards Wireguard. OpenVPN may be supported in
   the future, particularly if there is a demand for it.
 - If multiple VPN instances are being used, it's highly recommended to use MQTT.
