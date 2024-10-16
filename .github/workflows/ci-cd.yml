@@ -51,6 +51,11 @@ jobs:
         run: |
           getent passwd 1000
 
+      - name: who am i
+        run: |
+          echo $USER
+          whoami
+
       #- name: Create user with UID 1000
       #  run: |
       #    sudo useradd -m -u 1000 randomizer || true
