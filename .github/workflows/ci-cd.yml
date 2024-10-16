@@ -92,3 +92,14 @@ jobs:
       - name: Check Docker Socket
         run: ls -l /var/run/docker.sock || echo "Docker socket not found"
 
+      - name: Run Docker Container with Group Add
+        run: |
+          set +e  # Disable immediate exit on error
+          container_id=$(docker run -d --group-add docker -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          echo "Container ID: $container_id"
+          exit_code=$(docker wait "$container_id")
+          echo "Container exited with status $exit_code"
+          if [ "$exit_code" -ne 0 ]; then
+            echo "Fetching logs from container $container_id"
+            docker logs "$container_id" || true
+          fi
