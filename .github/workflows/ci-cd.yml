@@ -117,10 +117,12 @@ jobs:
           # container_id=$(docker run -d --privileged --group-add docker -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
 
           # docker run -dit --name randomizer -v /var/run/docker.sock:/var/run/docker.sock randomizer
-          container_id=$(docker run -dit -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          # container_id=$(docker run -dit -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          container_id=$(docker run -dit --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
 
           docker exec -i $container_id ls -ld /var/run/docker.sock
           docker exec -i $container_id id
+          docker exec -i $container_id docker ps
 
           echo "Container ID: $container_id"
           exit_code=$(docker wait "$container_id")
