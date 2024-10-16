@@ -119,8 +119,8 @@ jobs:
           # docker run -dit --name randomizer -v /var/run/docker.sock:/var/run/docker.sock randomizer
           container_id=$(docker run -dit -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
 
-          docker exec -it $container_id ls -ld /var/run/docker.sock
-          docker exec -it $container_id id
+          docker exec -i $container_id ls -ld /var/run/docker.sock
+          docker exec -i $container_id id
 
           echo "Container ID: $container_id"
           exit_code=$(docker wait "$container_id")
