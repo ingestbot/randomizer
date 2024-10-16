@@ -47,8 +47,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      #- name: TruffleHog OSS
-      #  uses: trufflesecurity/trufflehog@v3.82.8
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@v3.82.8
 
       #- name: Super-Linter
       #  uses: super-linter/super-linter@v7.1.0
@@ -62,6 +62,12 @@ jobs:
       #  run: |
       #    source venv/bin/activate
       #    PYTHONPATH=. pytest tests/test_main.py -vv
+
+      - name: Docker Login
+        uses: docker/login-action@v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       #
       # https://github.com/marketplace/actions/docker-setup-buildx
@@ -92,3 +98,56 @@ jobs:
       - name: Check Docker Socket
         run: ls -l /var/run/docker.sock || echo "Docker socket not found"
 
+      - name: Run Docker Container with Logs Capture
+        id: run_container
+        run: |
+          set +e  # Disable immediate exit on error
+          container_id=$(docker run -d -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          echo "Container ID: $container_id"
+
+          # Wait for the container to exit
+          exit_code=$(docker wait "$container_id")
+
+          echo "Container exited with status $exit_code"
+          # Capture logs if the container exited with an error
+          if [ "$exit_code" -ne 0 ]; then
+            echo "Fetching logs from container $container_id"
+            docker logs "$container_id" || true
+          fi
+
+      - name: Run the Docker container | capture logs | verify logging
+        run: |
+          # container_id=$(docker run -d localbuild/testimage)
+          timeout=180
+          interval=5
+          elapsed=0
+          container_id=${{ steps.run_container.outputs.id }}
+
+          while [ "$elapsed" -lt "$timeout" ]; do
+              if docker logs "$container_id" 2>&1 | grep -q "Starting randomizer"; then
+                  echo "PASS"
+                  exit 0
+              fi
+              sleep "$interval"
+              elapsed=$((elapsed + interval))
+          done
+
+          echo "FAIL: Expected logging not found within the timeout period."
+          docker logs "$container_id"
+          exit 1
+
+      #- name: Show Container Logs
+      #  run: |
+      #    container_id=${{ steps.run_container.outputs.id }}
+      #    echo "Container Logs:"
+      #    docker logs "$container_id" || true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.SHORT_SHA }}
