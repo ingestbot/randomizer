@@ -21,7 +21,7 @@ services:
       - HEALTH_SERVER_ADDRESS=0.0.0.0:9999
       #
       # providers - https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
-      # 
+      #
       - VPN_TYPE=wireguard
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
@@ -33,7 +33,7 @@ services:
       #
       - UPDATER_PERIOD=1h
       #
-      # http proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md 
+      # http proxy - https://github.com/qdm12/gluetun-wiki/blob/main/setup/options/http-proxy.md
       #
       - HTTPPROXY=on
       - HTTPPROXY_STEALTH=on

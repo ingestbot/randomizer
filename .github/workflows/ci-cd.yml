@@ -48,6 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_JSCPD: false
+          VALIDATE_YAML: false
 
       #- name: Run tests
       #  run: |

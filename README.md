@@ -52,10 +52,10 @@ Options are defined in a separate YML configuration file (see
 [randomizer](randomizer) by the main parameter `config`.
 
 `debug`: Increases verbosity of logging and frequency of rotation (see also
-Logging section and `ttime_min`, `ttime_max`)  `shuffle_vpn_provider`: True to
+Logging section and `ttime_min`, `ttime_max`) `shuffle_vpn_provider`: True to
 support multiple VPN providers. False if single. Multiple VPN providers require
-multiple `.env.*` files  `mqtt_enable`: True to support MQTT.
-`influxdb_enable`: True to support InfluxDB.  `container_name`: This name should
+multiple `.env.*` files `mqtt_enable`: True to support MQTT.
+`influxdb_enable`: True to support InfluxDB. `container_name`: This name should
 match `container_name` given in `docker-compose.yml`
 
 ## Example Architecture
