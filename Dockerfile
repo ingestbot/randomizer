@@ -22,6 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY randomizer .
 COPY randomizer.yml .
 
-ENTRYPOINT ["sh", "-c"]
+# ENTRYPOINT ["sh", "-c"]
 
-CMD ["python /app/randomizer --config $RANDOMIZER_CONFIG"]
+# CMD ["python /app/randomizer --config $RANDOMIZER_CONFIG"]
