@@ -1,9 +1,22 @@
-# Gluetun VPN Randomizer
+<div align="center">
+  <img src="./images/random_image.png" width="234" alt="random image"/>
 
-Gluetun VPN Randomizer is a Python application developed for the purpose of
-rotating VPN gateways from one or more VPN providers. This will change your
-outbound IP address, and optionally your VPN provider, on a random basis within
-a given time period (eg, every 2-4 hours).
+# Randomizer
+
+A Gluetun VPN Randomizer
+<br/><br/>
+
+[![Pulls from DockerHub](https://img.shields.io/docker/pulls/ingestbot/randomizer.svg)](https://hub.docker.com/r/ingestbot/randomizer)
+[![cicd status](https://github.com/ingestbot/randomizer/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ingestbot/randomizer/actions/workflows/ci-cd.yml)
+
+</div>
+
+## Gluetun VPN Randomizer
+
+Gluetun VPN Randomizer is a Python application and Docker container developed
+for the purpose of rotating VPN gateways from one or more VPN providers. This
+will change your outbound IP address, and optionally your VPN provider, on a
+random basis within a given time period (eg, every 2-4 hours).
 
 Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 
@@ -27,7 +40,7 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 - Modify the provided [env.example](examples/env.example) and copy to the
   Gluetun path as `.env`.
   This provides values to the `environment:` parameters in
-  [docker-compose.yml](examples/docker-compose/docker-compose.yml).
+  [docker-compose.yml](examples/docker-compose/docker-compose.gluetun_basic.yml).
   - eg, `/usr/local/docker/gluetun/.env`
 - Create a `gluetun_config` directory. This should be the same path defined in
   `volumes:`
@@ -100,7 +113,7 @@ environment.
 
 An example of using Gluetun with
 [Unbound](https://nlnetlabs.nl/projects/unbound/about/) is shown in
-[/unbound](examples/unbound)
+[unbound](examples/unbound)
 
 ### Blocky
 
