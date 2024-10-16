@@ -21,7 +21,7 @@ Some familiarity with Docker, VPN (Wireguard), and Python may be helpful.
 ### For both systemd and Docker
 
 - Get a functional [docker-compose.yml]
-(examples/docker-compose/docker-compose.gluetun_basic.yml) working with Gluetun
+  (examples/docker-compose/docker-compose.gluetun_basic.yml) working with Gluetun
   (see the provided example).
   - eg, `/usr/local/docker/gluetun/docker-compose.yml`
 - Modify the provided [env.example](examples/env.example) and copy to the

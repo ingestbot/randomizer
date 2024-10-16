@@ -15,7 +15,7 @@ services:
       # - RANDOMIZER_CONFIG=/app/gluetun/randomizer.yml
 
       #
-      # proxy is optional 
+      # proxy is optional
       #
       - HTTP_PROXY=${http_proxy}
       - HTTPS_PROXY=${https_proxy}
