@@ -23,6 +23,20 @@ jobs:
       DOCKER_IMAGE_NAME: randomizer
 
     steps:
+
+      - name: get user with UID 1000
+        run: |
+          getent passwd 1000
+
+      - name: who am i and id
+        run: |
+          echo $USER
+          whoami
+          id $USER
+
+      - name: Check Docker Socket
+        run: ls -l /var/run/docker.sock || echo "Docker socket not found"
+
       - name: Set up environment variables
         run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
 
