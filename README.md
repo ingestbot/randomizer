@@ -127,12 +127,13 @@ shown in [blocky](examples/blocky)
 ## Notes
 
 - VPN Service: Temporary VPN service can be obtained via <https://freevpn.us>. See
-  [docker-compose.freevpn.us.yml](docker-compose.freevpn.us.yml) for details.
+  [docker-compose.freevpn.us.yml](examples/docker-compose/docker-compose.freevpn.us.yml) for details.
 - Currently, randomizer is biased towards Wireguard. OpenVPN may be supported in
   the future, particularly if there is a demand for it.
 - If multiple VPN instances are being used, it's highly recommended to use MQTT.
   This prevents conflicting gateways from being used.
-- Docker Secrets will be adopted once available
-  <https://github.com/qdm12/gluetun/issues/1758>
+- Docker Secrets will be adopted... soon!
+  - <https://github.com/qdm12/gluetun/issues/1758>
+  - <https://github.com/qdm12/gluetun/issues/614>
 - [VPN Comparison
   Table](https://www.reddit.com/r/VPN/comments/m736zt/vpn_comparison_table)
