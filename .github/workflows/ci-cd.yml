@@ -47,23 +47,15 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      - name: get user with UID 1000
-        run: |
-          getent passwd 1000
-
-      - name: who am i and id
-        run: |
-          echo $USER
-          whoami
-          id $USER
-
-      #- name: Create user with UID 1000
+      #- name: get user with UID 1000
       #  run: |
-      #    sudo useradd -m -u 1000 randomizer || true
+      #    getent passwd 1000
 
-      #- name: Add user to Docker group
+      #- name: who am i and id
       #  run: |
-      #    sudo usermod -aG docker randomizer
+      #    echo $USER
+      #    whoami
+      #    id $USER
 
       #- name: TruffleHog OSS
       #  uses: trufflesecurity/trufflehog@v3.82.8
@@ -107,22 +99,24 @@ jobs:
       #    echo "Container ID: $container_id"
       #    echo "::set-output name=id::$container_id"
 
-      - name: Check Docker Socket
-        run: ls -l /var/run/docker.sock || echo "Docker socket not found"
+      #- name: Check Docker Socket
+      #  run: ls -l /var/run/docker.sock || echo "Docker socket not found"
 
       - name: Run Docker Container
         run: |
           set +e  # Disable immediate exit on error
-          # container_id=$(docker run -d --group-add docker -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+
+          container_id=$(docker run -d --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+
           # container_id=$(docker run -d --privileged --group-add docker -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
 
           # docker run -dit --name randomizer -v /var/run/docker.sock:/var/run/docker.sock randomizer
           # container_id=$(docker run -dit -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
-          container_id=$(docker run -dit --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
+          # container_id=$(docker run -dit --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
 
-          docker exec -i $container_id ls -ld /var/run/docker.sock
-          docker exec -i $container_id id
-          docker exec -i $container_id docker ps
+          # docker exec -i $container_id ls -ld /var/run/docker.sock
+          # docker exec -i $container_id id
+          # docker exec -i $container_id docker ps
 
           echo "Container ID: $container_id"
           exit_code=$(docker wait "$container_id")
