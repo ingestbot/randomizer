@@ -113,22 +113,23 @@ client = docker.from_env()
 # handler = [logging.handlers.SysLogHandler(address='/dev/log'), logging.StreamHandler(sys.stdout)]
 #
 l = logging.getLogger("randomizer")
-l.setLevel(logging.INFO)
 
-#
-# If this is a docker container, send logging to STDOUT. Otherwise, log to
-# syslog.
-#
+level = logging.DEBUG if debug else logging.INFO
+l.setLevel(level)
+
 if config["is_docker_container"]:
     handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        "%(asctime)s %(name)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
 else:
     handler = logging.handlers.SysLogHandler(address="/dev/log")
+    formatter = logging.Formatter(
+        "%(name)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
-formatter = logging.Formatter("%(name)s %(funcName)s(): %(message)s")
 handler.setFormatter(formatter)
 l.addHandler(handler)
-if debug:
-    l.setLevel(logging.DEBUG)
 
 
 def send_request(method=None, url=None, data=None, headers=None):
