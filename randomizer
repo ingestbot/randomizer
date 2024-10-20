@@ -47,7 +47,6 @@ from datetime import datetime, timezone
 from influxdb import InfluxDBClient
 from requests import ConnectionError
 
-my_hostname = socket.gethostname()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -55,12 +54,18 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-# config = yaml.safe_load(open("/usr/local/etc/randomizer.yml"))
 config = yaml.safe_load(open(args.config))
 
 debug = config["debug"]
 
-hostname = config["hostname"]
+if config["is_docker_container"]:
+    my_hostname = socket.gethostname()
+    hostname = config["hostname"]
+else:
+    my_hostname = socket.gethostname()
+    hostname = my_hostname
+
+proxy_port = 8008
 
 shuffle_vpn_provider = config["shuffle_vpn_provider"]
 
@@ -132,19 +137,29 @@ handler.setFormatter(formatter)
 l.addHandler(handler)
 
 
-def send_request(method=None, url=None, data=None, headers=None):
+def send_request(method=None, url=None, data=None, headers=None, proxy=None):
     #
     # https://stackoverflow.com/questions/44448625/how-to-handle-a-connection-error-gracefully-in-requests
     #
     r = None
     connection_timeout = 5
     start_time = time.time()
+
+    proxies = (
+        {
+            "http": proxy,
+            "https": proxy,
+        }
+        if proxy
+        else None
+    )
+
     while True:
         try:
             if method == "get":
-                r = requests.get(url)
+                r = requests.get(url, proxies=proxies)
             if method == "put":
-                r = requests.put(url, data=data, headers=headers)
+                r = requests.put(url, data=data, headers=headers, proxies=proxies)
             break
         except ConnectionError as e:
             if time.time() > start_time + connection_timeout:
@@ -155,9 +170,14 @@ def send_request(method=None, url=None, data=None, headers=None):
             else:
                 l.debug(f"Request timed out. Trying again.")
                 time.sleep(1)
-    if r and (r.status_code) and (r.status_code == 200):
-        if r.text and r.json().get("public_ip"):
-            response = r.json()["public_ip"]
+    if r and r.status_code == 200:
+        if "application/json" in r.headers.get("Content-Type", ""):
+            json_response = r.json()
+            response = (
+                json_response.get("ip")
+                or json_response.get("ip_address")
+                or json_response.get("ip_addr")
+            )
         else:
             response = "OK"
     else:
@@ -392,10 +412,22 @@ class vpn:
         )
 
     def get_public_ip(self):
+        urllist_ipaddr = [
+            "https://api.ivpn.net/v4/geo-lookup",
+            "https://ipinfo.io/json",
+            "https://api.ipify.org/?format=json",
+            "https://ipconfig.io/json",
+            "https://ifconfig.io/all.json",
+            "https://ifconfig.me/all.json",
+        ]
+        urllist_rand = random.sample(urllist_ipaddr, len(urllist_ipaddr))
+
         ipaddr_public = send_request(
-            method="get",
-            url=f"http://{hostname}:" + str(gluetun_control_port) + "/v1/publicip/ip",
+            method="get", url=urllist_rand[0], proxy=f"http://{hostname}:{proxy_port}"
         )
+
+        l.debug(f"Public ipaddr: {ipaddr_public}")
+
         return ipaddr_public
 
     def get_gw_name(self, ipaddr):
