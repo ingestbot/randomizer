@@ -581,7 +581,7 @@ class mqtt:
         # This takes two strings and publishes to mqtt with datetime.
         #
         l.info(f"Publishing details to mqtt...")
-        client = mqtt_client.Client()
+        client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2)
         client.connect(self.mqtt_broker)
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         vpn_provider = vpn().get_provider_name()
@@ -601,7 +601,7 @@ class mqtt:
         #
         mdict = {}
 
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, rc, properties=None):
             client.subscribe(self.topic_sub)
 
         def on_message(client, userdata, msg):
@@ -614,7 +614,7 @@ class mqtt:
                 mdict.update(ddict)
             return mdict
 
-        client = mqtt_client.Client()
+        client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2)
         client.connect(self.mqtt_broker)
         client.loop_start()
         client.on_connect = on_connect
