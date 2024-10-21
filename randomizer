@@ -71,7 +71,7 @@ shuffle_vpn_provider = config["shuffle_vpn_provider"]
 
 mqtt_enable = config["mqtt_enable"]
 mqtt_broker = config["mqtt_broker"]
-mqtt_topic_pub = config["mqtt_topic_pub"] + my_hostname
+mqtt_topic_pub = config["mqtt_topic_pub"] + hostname.split('.')[0]
 mqtt_topic_sub = config["mqtt_topic_sub"]
 
 ttime_mqtt_pub = config["ttime_mqtt_pub"]
