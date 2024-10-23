@@ -548,7 +548,7 @@ class vpn:
                 elif val.get("vpn_gateway"):
                     gw_other.append(val["vpn_gateway"])
 
-            l.debug(f"Returns: {gw_other}")
+            l.debug(f"Current gateway list shows: {gw_other}")
             return gw_other
         else:
             return None
