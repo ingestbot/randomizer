@@ -196,7 +196,7 @@ def influxdb_pub(vpn_gw_name, ipaddr_public):
     d["tags"] = {"vpn_tracker": "vpn_tracker"}
     vpn_provider = vpn().get_provider_name()
     d["fields"] = {
-        "hostname": hostname,
+        "hostname": hostname.split('.')[0],
         "vpn_provider": vpn_provider,
         "gateway": vpn_gw_name,
         "ipaddr_public": ipaddr_public,
