@@ -539,11 +539,15 @@ class vpn:
         Docker().docker_checkup_and_pub()
 
     def get_gw_other(self):
+
+        global hostname
+
         if mqtt_enable:
             mdict = mqtt().mqtt_get_messages()
             gw_other = []
+            hostname = hostname.split('.')[0]
             for key, val in mdict.items():
-                if key == my_hostname:
+                if key == hostname:
                     continue
                 elif val.get("vpn_gateway"):
                     gw_other.append(val["vpn_gateway"])
