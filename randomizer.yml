@@ -6,11 +6,11 @@ debug: True
 # Is this a docker container?
 is_docker_container: True
 #
-# Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programattically, overriding the 
+# Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programattically, overriding the
 # configured value below
 is_docker_container_multi: False
 
-# hostname_fqdn must be a resolvable, functional dns name which will be used 
+# hostname_fqdn must be a resolvable, functional dns name which will be used
 # in http requests against the gluetun service
 hostname_fqdn: "haha90.sfio.win"
 

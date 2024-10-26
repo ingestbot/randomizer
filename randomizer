@@ -398,7 +398,9 @@ class vpn:
         headers = {"Content-Type": "application/json"}
         send_request(
             method="put",
-            url=f"http://{hostname_fqdn}:" + str(gluetun_control_port) + "/v1/vpn/status",
+            url=f"http://{hostname_fqdn}:"
+            + str(gluetun_control_port)
+            + "/v1/vpn/status",
             data=json.dumps(payload),
             headers=headers,
         )
@@ -406,7 +408,9 @@ class vpn:
         payload = {"status": "running"}
         send_request(
             method="put",
-            url=f"http://{hostname_fqdn}:" + str(gluetun_control_port) + "/v1/vpn/status",
+            url=f"http://{hostname_fqdn}:"
+            + str(gluetun_control_port)
+            + "/v1/vpn/status",
             data=json.dumps(payload),
             headers=headers,
         )
@@ -423,7 +427,9 @@ class vpn:
         urllist_rand = random.sample(urllist_ipaddr, len(urllist_ipaddr))
 
         ipaddr_public = send_request(
-            method="get", url=urllist_rand[0], proxy=f"http://{hostname_fqdn}:{gluetun_proxy_port}"
+            method="get",
+            url=urllist_rand[0],
+            proxy=f"http://{hostname_fqdn}:{gluetun_proxy_port}",
         )
 
         l.debug(f"Public ipaddr: {ipaddr_public}")
