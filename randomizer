@@ -378,6 +378,7 @@ class vpn:
         pass
 
     def get_healthcheck(self):
+        l.debug(f"Running gluetun healthcheck against: {hostname_fqdn}")
         health = send_request(
             method="get", url=f"http://{hostname_fqdn}:" + str(gluetun_healthcheck_port)
         )
@@ -490,10 +491,10 @@ class vpn:
 
     def randomizer(self):
         if vpn().get_healthcheck() == "OK":
-            l.debug(f"Healthcheck has passed. Restarting VPN...")
+            l.debug(f"Healthcheck has passed. Restarting VPN via gluetun control server")
             vpn().restart_vpn()
             time.sleep(3)
-            l.debug(f"VPN has been restarted...")
+            l.debug(f"VPN has been restarted. VPN IP address renewed.")
             if Docker().docker_get_ready_state():
                 l.debug(f"Ready state is OK. Proceeding to Docker checkup...")
                 Docker().docker_checkup_and_pub()
