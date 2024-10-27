@@ -31,6 +31,7 @@ import json
 import logging
 import logging.handlers
 import os
+import pymysql
 import random
 import re
 import requests
@@ -359,13 +360,11 @@ class Docker:
 
                 if mqtt_enable:
                     mqtt().mqtt_pub(vpn_gw_name, my_ipaddr)
-                else:
-                    pass
-
+                if mysql_enable:
+                    mysql().mysql_pub(vpn_gw_name, my_ipaddr)
                 if influxdb_enable:
                     influxdb_pub(vpn_gw_name, my_ipaddr)
-                else:
-                    pass
+
             else:
                 l.info("docker_checkup fail")
         except ValueError as e:
@@ -491,7 +490,9 @@ class vpn:
 
     def randomizer(self):
         if vpn().get_healthcheck() == "OK":
-            l.debug(f"Healthcheck has passed. Restarting VPN via gluetun control server")
+            l.debug(
+                f"Healthcheck has passed. Restarting VPN via gluetun control server"
+            )
             vpn().restart_vpn()
             time.sleep(3)
             l.debug(f"VPN has been restarted. VPN IP address renewed.")
@@ -547,8 +548,12 @@ class vpn:
 
     def get_gw_other(self):
 
-        if mqtt_enable:
-            mdict = mqtt().mqtt_get_messages()
+        if mqtt_enable or mysql_enable:
+            if mqtt_enable:
+                mdict = mqtt().mqtt_get_messages()
+            if mysql_enable:
+                mdict = mysql().mysql_get_messages()
+
             gw_other = []
             for key, val in mdict.items():
                 if key == instance_name:
@@ -562,7 +567,7 @@ class vpn:
             return None
 
     def get_gw_new(self):
-        if mqtt_enable:
+        if mqtt_enable or if mysql_enable:
             gw_other = self.get_gw_other()
             while True:
                 gw_current = self.get_gw_name(self.get_gw_ip())
@@ -632,6 +637,93 @@ class mqtt:
         client.loop_stop()
 
         return mdict
+
+
+class mysql:
+    def __init__(self):
+        self.db_config = {
+            "host": config["mysql_host"],
+            "user": config["mysql_user"],
+            "password": config["mysql_password"],
+            "database": config["mysql_database"],
+        }
+        self.connection = None
+        self.cursor = None
+
+    def mysql_connect(self):
+        try:
+            self.connection = pymysql.connect(**self.db_config)
+            self.cursor = self.connection.cursor()
+        except Exception as e:
+            print(f"mysql: Error connecting to the database: {e}")
+
+    def mysql_pub(self, vpn_gateway, vpn_ipaddr):
+
+        if not self.connection:
+            print("mysql: Connection not established. Call connect() first.")
+            return
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        vpn_provider = vpn().get_provider_name()
+
+        insert_query = """
+        INSERT INTO vpn_status (datetime, instance_name, vpn_provider, vpn_gateway, vpn_ipaddr)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+
+        '''
+        values = (
+            data["datetime"],
+            data["vpn_provider"],
+            data["vpn_gateway"],
+            data["vpn_ipaddr"],
+            data["instance_name"],
+        )
+        '''
+
+        status = (
+            now,
+            instance_name,
+            vpn_provider,
+            vpn_gateway,
+            vpn_ipaddr,
+        )
+
+        try:
+            self.cursor.execute(insert_query, status)
+            self.connection.commit()
+        except Exception as e:
+            print(f"mysql: Error inserting record: {e}")
+
+    def mysql_close(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.connection:
+            self.connection.close()
+
+    def mysql_get_messages(self):
+        if not self.connection:
+            print("mysql: Connection not established. Call connect() first.")
+            return []
+
+        query = """
+        SELECT vpn_provider, vpn_gateway, vpn_ipaddr, instance_name FROM vpn_status
+        WHERE id IN (
+            SELECT MAX(id) FROM vpn_status
+            GROUP BY instance_name
+        )
+        """
+
+        try:
+            self.cursor.execute(query)
+            results = self.cursor.fetchall()
+            column_names = [desc[0] for desc in self.cursor.description]
+            messages = [dict(zip(column_names, row)) for row in results]
+
+            return json.dumps(messages)
+        except Exception as e:
+            print(f"mysql: Error retrieving records: {e}")
+            return json.dumps([])
 
 
 class TimerThread(threading.Thread):

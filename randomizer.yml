@@ -22,6 +22,14 @@ instance_name: "haha90"
 #
 shuffle_vpn_provider: True
 #
+# mysql 
+#
+mysql_enable: False
+mysql_host: "mysql.example.com"
+mysql_user: "randomizer"
+mysql_password: "mysql123"
+mysql_database: "randomizer"
+#
 # MQTT - when mqtt_enable is False, the remaining mqtt_* variables are not used
 #
 mqtt_enable: False
