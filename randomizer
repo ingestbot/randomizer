@@ -31,6 +31,7 @@ import json
 import logging
 import logging.handlers
 import os
+import pymysql
 import random
 import re
 import requests
@@ -68,6 +69,8 @@ else:
 gluetun_proxy_port = config["gluetun_proxy_port"]
 
 shuffle_vpn_provider = config["shuffle_vpn_provider"]
+
+mysql_enable = config["mysql_enable"]
 
 mqtt_enable = config["mqtt_enable"]
 mqtt_broker = config["mqtt_broker"]
@@ -240,7 +243,7 @@ class Docker:
 
     def docker_container_start(self):
         if not os.path.exists(compose_file_path):
-            l.info(f"No Docker compose file. Exiting.")
+            l.info(f"No Docker compose file ({compose_file_path}). Exiting.")
             os._exit(1)
         l.info(f"Starting docker container...")
         try:
@@ -359,13 +362,11 @@ class Docker:
 
                 if mqtt_enable:
                     mqtt().mqtt_pub(vpn_gw_name, my_ipaddr)
-                else:
-                    pass
-
+                if mysql_enable:
+                    mysql().mysql_pub(vpn_gw_name, my_ipaddr)
                 if influxdb_enable:
                     influxdb_pub(vpn_gw_name, my_ipaddr)
-                else:
-                    pass
+
             else:
                 l.info("docker_checkup fail")
         except ValueError as e:
@@ -378,6 +379,7 @@ class vpn:
         pass
 
     def get_healthcheck(self):
+        l.debug(f"Running gluetun healthcheck against: {hostname_fqdn}")
         health = send_request(
             method="get", url=f"http://{hostname_fqdn}:" + str(gluetun_healthcheck_port)
         )
@@ -490,10 +492,12 @@ class vpn:
 
     def randomizer(self):
         if vpn().get_healthcheck() == "OK":
-            l.debug(f"Healthcheck has passed. Restarting VPN...")
+            l.debug(
+                f"Healthcheck has passed. Restarting VPN via gluetun control server"
+            )
             vpn().restart_vpn()
             time.sleep(3)
-            l.debug(f"VPN has been restarted...")
+            l.debug(f"VPN has been restarted. VPN IP address renewed.")
             if Docker().docker_get_ready_state():
                 l.debug(f"Ready state is OK. Proceeding to Docker checkup...")
                 Docker().docker_checkup_and_pub()
@@ -546,9 +550,17 @@ class vpn:
 
     def get_gw_other(self):
 
-        if mqtt_enable:
-            mdict = mqtt().mqtt_get_messages()
+        if mqtt_enable or mysql_enable:
+            if mqtt_enable:
+                mdict = mqtt().mqtt_get_messages()
+            if mysql_enable:
+                mdict = mysql().mysql_get_messages()
+                mdict = {item["instance_name"]: item for item in mdict}
+
+            l.debug(f"mdict: {mdict}")
+
             gw_other = []
+
             for key, val in mdict.items():
                 if key == instance_name:
                     continue
@@ -561,7 +573,7 @@ class vpn:
             return None
 
     def get_gw_new(self):
-        if mqtt_enable:
+        if mqtt_enable or mysql_enable:
             gw_other = self.get_gw_other()
             while True:
                 gw_current = self.get_gw_name(self.get_gw_ip())
@@ -631,6 +643,95 @@ class mqtt:
         client.loop_stop()
 
         return mdict
+
+
+class mysql:
+    def __init__(self):
+        self.db_config = {
+            "host": config["mysql_host"],
+            "user": config["mysql_user"],
+            "password": config["mysql_password"],
+            "database": config["mysql_database"],
+        }
+        self.connection = None
+        self.cursor = None
+
+    def mysql_connect(self):
+        try:
+            self.connection = pymysql.connect(**self.db_config)
+            self.cursor = self.connection.cursor()
+        except Exception as e:
+            print(f"mysql: Error connecting to mysql: {e}")
+
+    def mysql_close(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.connection:
+            self.connection.close()
+
+    def mysql_pub(self, vpn_gateway, vpn_ipaddr):
+
+        l.info(f"Publishing details to mysql...")
+        self.mysql_connect()
+
+        if not self.connection:
+            l.info(f"mysql: Error connecting to mysql")
+            return
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        vpn_provider = vpn().get_provider_name()
+
+        insert_query = """
+        INSERT INTO vpn_status (datetime, instance_name, vpn_provider, vpn_gateway, vpn_ipaddr)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        status = (
+            now,
+            instance_name,
+            vpn_provider,
+            vpn_gateway,
+            vpn_ipaddr,
+        )
+
+        try:
+            self.cursor.execute(insert_query, status)
+            self.connection.commit()
+        except Exception as e:
+            l.info(f"mysql: Error inserting record: {e}")
+
+        self.mysql_close()
+
+    def mysql_get_messages(self):
+
+        self.mysql_connect()
+
+        if not self.connection:
+            l.info(f"mysql: Error connecting to mysql")
+            return []
+
+        query = """
+        SELECT vpn_provider, vpn_gateway, vpn_ipaddr, instance_name FROM vpn_status
+        WHERE id IN (
+            SELECT MAX(id) FROM vpn_status
+            GROUP BY instance_name
+        )
+        """
+
+        try:
+            self.cursor.execute(query)
+            results = self.cursor.fetchall()
+            l.debug(f"mysql_get_messages result: {results}")
+            column_names = [desc[0] for desc in self.cursor.description]
+            messages = [dict(zip(column_names, row)) for row in results]
+            l.debug(f"mysql_get_messages messages: {messages}")
+
+            return messages
+
+        except Exception as e:
+            l.info(f"mysql: Error retrieving records: {e}")
+            return json.dumps([])
+
+        self.mysql_close()
 
 
 class TimerThread(threading.Thread):

@@ -6,7 +6,7 @@ debug: True
 # Is this a docker container?
 is_docker_container: True
 #
-# Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programattically, overriding the
+# Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programmatically, overriding the
 # configured value below
 is_docker_container_multi: False
 
@@ -22,14 +22,22 @@ instance_name: "haha90"
 #
 shuffle_vpn_provider: True
 #
-# MQTT - when mqtt_enable is False, the remaining mqtt_* variables are not used
+# mysql - when mysql_enable is False, the consecutive mysql_* variables are not used
+#
+mysql_enable: False
+mysql_host: "mysql.example.com"
+mysql_user: "randomizer"
+mysql_password: "mysql123"
+mysql_database: "randomizer"
+#
+# MQTT - when mqtt_enable is False, the consecutive mqtt_* variables are not used
 #
 mqtt_enable: False
 mqtt_broker: "mqtt.example.com"
 mqtt_topic_pub: "proxies/"
 mqtt_topic_sub: "proxies/#"
 #
-# InfluxDB - when influxdb_enable is False, the remaining influxdb_* variables are not used
+# InfluxDB - when influxdb_enable is False, the consecutive influxdb_* variables are not used
 #
 influxdb_enable: False
 influxdb_host: "influxdb.example.com"
