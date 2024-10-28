@@ -6,8 +6,17 @@ debug: True
 # Is this a docker container?
 is_docker_container: True
 #
-# Set the hostname if docker container
-hostname: "haha90.sfio.win"
+# Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programattically, overriding the
+# configured value below
+is_docker_container_multi: False
+
+# hostname_fqdn must be a resolvable, functional dns name which will be used
+# in http requests against the gluetun service
+hostname_fqdn: "haha90.sfio.win"
+
+# instance_name is used for superficial labeling against a shared database
+instance_name: "haha90"
+
 #
 # Rotate multiple VPN providers
 #
@@ -35,6 +44,7 @@ influxdb_measurement: "vpn_tracker"
 container_name: "gluetun"
 gluetun_healthcheck_port: 6666
 gluetun_control_port: 8000
+gluetun_proxy_port: 8008
 gluetun_path: "/usr/local/docker/gluetun"
 #
 # Control parameters for randomizer
