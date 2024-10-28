@@ -3,3 +3,4 @@ pyyaml
 paho-mqtt
 influxdb
 argparse
+pymysql

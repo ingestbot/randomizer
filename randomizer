@@ -70,6 +70,8 @@ gluetun_proxy_port = config["gluetun_proxy_port"]
 
 shuffle_vpn_provider = config["shuffle_vpn_provider"]
 
+mysql_enable = config["mysql_enable"]
+
 mqtt_enable = config["mqtt_enable"]
 mqtt_broker = config["mqtt_broker"]
 mqtt_topic_pub = config["mqtt_topic_pub"] + instance_name
@@ -553,8 +555,16 @@ class vpn:
                 mdict = mqtt().mqtt_get_messages()
             if mysql_enable:
                 mdict = mysql().mysql_get_messages()
+                if isinstance(mdict, str):
+                    mdict = json.loads(mdict)
+                print(f"mdict: {mdict}")
+                print(type(mdict))
+                mdict = {item["instance_name"]: item for item in mdict}
 
             gw_other = []
+
+            print(f"mdict: {mdict}")
+
             for key, val in mdict.items():
                 if key == instance_name:
                     continue
@@ -567,7 +577,7 @@ class vpn:
             return None
 
     def get_gw_new(self):
-        if mqtt_enable or if mysql_enable:
+        if mqtt_enable or mysql_enable:
             gw_other = self.get_gw_other()
             while True:
                 gw_current = self.get_gw_name(self.get_gw_ip())
@@ -657,7 +667,15 @@ class mysql:
         except Exception as e:
             print(f"mysql: Error connecting to the database: {e}")
 
+    def mysql_close(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.connection:
+            self.connection.close()
+
     def mysql_pub(self, vpn_gateway, vpn_ipaddr):
+
+        self.mysql_connect()
 
         if not self.connection:
             print("mysql: Connection not established. Call connect() first.")
@@ -695,13 +713,13 @@ class mysql:
         except Exception as e:
             print(f"mysql: Error inserting record: {e}")
 
-    def mysql_close(self):
-        if self.cursor:
-            self.cursor.close()
-        if self.connection:
-            self.connection.close()
+        self.mysql_close()
+
 
     def mysql_get_messages(self):
+
+        self.mysql_connect()
+
         if not self.connection:
             print("mysql: Connection not established. Call connect() first.")
             return []
@@ -717,6 +735,9 @@ class mysql:
         try:
             self.cursor.execute(query)
             results = self.cursor.fetchall()
+
+            print(f"mysql_get_messages result: {results}")
+
             column_names = [desc[0] for desc in self.cursor.description]
             messages = [dict(zip(column_names, row)) for row in results]
 
@@ -725,6 +746,7 @@ class mysql:
             print(f"mysql: Error retrieving records: {e}")
             return json.dumps([])
 
+        self.mysql_close()
 
 class TimerThread(threading.Thread):
     def __init__(self, interval, function):
