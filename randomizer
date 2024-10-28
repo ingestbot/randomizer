@@ -243,7 +243,7 @@ class Docker:
 
     def docker_container_start(self):
         if not os.path.exists(compose_file_path):
-            l.info(f"No Docker compose file. Exiting.")
+            l.info(f"No Docker compose file ({compose_file_path}). Exiting.")
             os._exit(1)
         l.info(f"Starting docker container...")
         try:
@@ -555,15 +555,11 @@ class vpn:
                 mdict = mqtt().mqtt_get_messages()
             if mysql_enable:
                 mdict = mysql().mysql_get_messages()
-                if isinstance(mdict, str):
-                    mdict = json.loads(mdict)
-                print(f"mdict: {mdict}")
-                print(type(mdict))
                 mdict = {item["instance_name"]: item for item in mdict}
 
-            gw_other = []
+            l.debug(f"mdict: {mdict}")
 
-            print(f"mdict: {mdict}")
+            gw_other = []
 
             for key, val in mdict.items():
                 if key == instance_name:
@@ -665,7 +661,7 @@ class mysql:
             self.connection = pymysql.connect(**self.db_config)
             self.cursor = self.connection.cursor()
         except Exception as e:
-            print(f"mysql: Error connecting to the database: {e}")
+            print(f"mysql: Error connecting to mysql: {e}")
 
     def mysql_close(self):
         if self.cursor:
@@ -675,10 +671,11 @@ class mysql:
 
     def mysql_pub(self, vpn_gateway, vpn_ipaddr):
 
+        l.info(f"Publishing details to mysql...")
         self.mysql_connect()
 
         if not self.connection:
-            print("mysql: Connection not established. Call connect() first.")
+            l.info(f"mysql: Error connecting to mysql")
             return
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -688,17 +685,6 @@ class mysql:
         INSERT INTO vpn_status (datetime, instance_name, vpn_provider, vpn_gateway, vpn_ipaddr)
         VALUES (%s, %s, %s, %s, %s)
         """
-
-        '''
-        values = (
-            data["datetime"],
-            data["vpn_provider"],
-            data["vpn_gateway"],
-            data["vpn_ipaddr"],
-            data["instance_name"],
-        )
-        '''
-
         status = (
             now,
             instance_name,
@@ -711,17 +697,16 @@ class mysql:
             self.cursor.execute(insert_query, status)
             self.connection.commit()
         except Exception as e:
-            print(f"mysql: Error inserting record: {e}")
+            l.info(f"mysql: Error inserting record: {e}")
 
         self.mysql_close()
-
 
     def mysql_get_messages(self):
 
         self.mysql_connect()
 
         if not self.connection:
-            print("mysql: Connection not established. Call connect() first.")
+            l.info(f"mysql: Error connecting to mysql")
             return []
 
         query = """
@@ -735,18 +720,19 @@ class mysql:
         try:
             self.cursor.execute(query)
             results = self.cursor.fetchall()
-
-            print(f"mysql_get_messages result: {results}")
-
+            l.debug(f"mysql_get_messages result: {results}")
             column_names = [desc[0] for desc in self.cursor.description]
             messages = [dict(zip(column_names, row)) for row in results]
+            l.debug(f"mysql_get_messages messages: {messages}")
 
-            return json.dumps(messages)
+            return messages
+
         except Exception as e:
-            print(f"mysql: Error retrieving records: {e}")
+            l.info(f"mysql: Error retrieving records: {e}")
             return json.dumps([])
 
         self.mysql_close()
+
 
 class TimerThread(threading.Thread):
     def __init__(self, interval, function):
