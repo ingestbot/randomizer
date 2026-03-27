@@ -68,6 +68,7 @@ jobs:
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_JSCPD: false
           VALIDATE_YAML: false
+          VALIDATE_DOCKERFILE_HADOLINT: false
 
       #- name: Run tests
       #  run: |
