@@ -421,7 +421,6 @@ class vpn:
         urllist_ipaddr = [
             "https://api.ivpn.net/v4/geo-lookup",
             "https://ipinfo.io/json",
-            "https://api.ipify.org/?format=json",
             "https://ipconfig.io/json",
             "https://ifconfig.io/all.json",
             "https://ifconfig.me/all.json",
@@ -523,18 +522,42 @@ class vpn:
         provider_name_current = self.get_provider_name()
         env_file = os.path.join(gluetun_path, ".env")
         env_glob = os.path.join(gluetun_path, ".env.*")
+
         for f in glob.glob(env_glob):
             provider_files.append(f)
-        provider_newfile = open(random.choice(provider_files))
-        with open(env_file, "w+") as env:
-            env.write(provider_newfile.read())
-            env.seek(0)
-            lines = env.read().splitlines()
+
+        provider_newfile = random.choice(provider_files)
+
+        with open(provider_newfile, "r") as f:
+            lines = f.readlines()
+
+        new_lines = []
+
+        for line in lines:
+            if line.startswith("SERVER_CITIES"):
+                key, value = line.split("=", 1)
+
+                cities = [c.strip() for c in value.strip().strip('"').split(",") if c.strip()]
+
+                if cities:
+                    random.shuffle(cities)
+                    shuffled_value = '"' + ", ".join(cities) + '"\n'
+                    line = f"{key}={shuffled_value}"
+
+            new_lines.append(line)
+
+        with open(env_file, "w") as env:
+            env.writelines(new_lines)
+
+        lines = [l.strip() for l in new_lines]
+
         for line in lines:
             if "VPN_SERVICE_PROVIDER" in line:
-                provider_name_new = line.split("=")[1]
+                provider_name_new = line.split("=", 1)[1]
+
         l.info(f"Current provider is: {provider_name_current}")
         l.info(f"New provider is: {provider_name_new}")
+
         #
         # container will reload changes to .env with 'docker compose up -d'
         #  https://stackoverflow.com/questions/42149529/how-to-reload-environment-variables-in-docker-compose-container-with-minimum-dow
