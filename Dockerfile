@@ -3,9 +3,16 @@ FROM python:alpine
 ENV RANDOMIZER_CONFIG=/app/randomizer.yml
 
 USER root
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
-    apk update && \
-    apk add --no-cache docker-cli-compose=2.29.7-r0
+# RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+#    apk update && \
+#    apk add --no-cache docker-cli-compose=2.29.7-r0
+
+#RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+#    apk update && \
+#    apk add --no-cache docker-cli-compose
+
+RUN apk update && \
+    apk add --no-cache docker-cli-compose
 
 RUN addgroup -g 988 docker
 RUN adduser -D -H randomizer && \
