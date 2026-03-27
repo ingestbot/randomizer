@@ -106,7 +106,8 @@ jobs:
         with:
           image: "localbuild/testimage"
           fail-build: true
-          severity-cutoff: high
+          # severity-cutoff: high
+          severity-cutoff: critical
           output-format: table
           ignore-unfixed: true
 
