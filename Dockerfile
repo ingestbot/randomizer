@@ -14,6 +14,8 @@ USER root
 RUN apk update && \
     apk add --no-cache docker-cli-compose
 
+RUN apk update && apk upgrade
+
 RUN addgroup -g 988 docker
 RUN adduser -D -H randomizer && \
     adduser randomizer docker
