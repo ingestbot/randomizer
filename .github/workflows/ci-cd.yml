@@ -89,16 +89,26 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: build local container
-        uses: docker/build-push-action@v4
+        # uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         with:
           tags: localbuild/testimage
           push: false
           load: true
 
+      #- name: Anchore Container Scan
+      #  uses: anchore/scan-action@v5.0.0
+      #  with:
+      #    image: "localbuild/testimage"
+
       - name: Anchore Container Scan
         uses: anchore/scan-action@v5.0.0
         with:
           image: "localbuild/testimage"
+          fail-build: true
+          severity-cutoff: high
+          output-format: table
+          ignore-unfixed: true
 
       - name: Run the Docker container | capture logs | verify logs
         run: |
@@ -122,7 +132,8 @@ jobs:
           exit 1
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+        # uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
