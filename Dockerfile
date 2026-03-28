@@ -21,6 +21,7 @@ USER root
 #        docker-ce-cli docker-compose-plugin && \
 #    rm -rf /var/lib/apt/lists/*
 
+# hadolint ignore=DL3008,DL4006
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl gnupg procps \
     && install -m 0755 -d /etc/apt/keyrings \

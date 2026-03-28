@@ -1,3 +1,0 @@
-ignored:
-  - DL3008   # version pinning is overkill for apt
-  - DL4006   # pipefail not critical here
