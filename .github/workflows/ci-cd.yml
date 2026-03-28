@@ -96,10 +96,13 @@ jobs:
           image-ref: "localbuild/testimage"
           format: "table"
           exit-code: "0"
-          # ignore-unfixed: true
-          only-fixed: false
+          ignore-unfixed: true
           vuln-type: "os,library"
-          severity-cutoff: "CRITICAL"
+          severity: "CRITICAL"
+
+      - name: Run Trivy and save report
+        run: |
+          trivy image --format table --severity CRITICAL --ignore-unfixed localbuild/testimage | tee trivy-report.txt
 
       - name: Upload Trivy Report
         uses: actions/upload-artifact@v4
