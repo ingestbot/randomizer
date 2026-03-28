@@ -1,67 +1,58 @@
-#
 # debug increases verbosity of logging and frequency of rotation (ie, ttl_min_debug, ttl_max_debug)
-#
-debug: True
-#
+debug: true
+
 # Is this a docker container?
-is_docker_container: True
-#
+is_docker_container: true
+
 # Not tested: If is_docker_container_multi is True, hostname_fqdn will be defined programmatically, overriding the
 # configured value below
-is_docker_container_multi: False
+is_docker_container_multi: false
 
 # hostname_fqdn must be a resolvable, functional dns name which will be used
 # in http requests against the gluetun service
-hostname_fqdn: "haha90.sfio.win"
+hostname_fqdn: haha90.sfio.win
 
 # instance_name is used for superficial labeling against a shared database
-instance_name: "haha90"
+instance_name: haha90
 
-#
 # Rotate multiple VPN providers
-#
-shuffle_vpn_provider: True
-#
+shuffle_vpn_provider: true
+
 # mysql - when mysql_enable is False, the consecutive mysql_* variables are not used
-#
-mysql_enable: False
-mysql_host: "mysql.example.com"
-mysql_user: "randomizer"
+mysql_enable: false
+mysql_host: mysql.example.com
+mysql_user: randomizer
 mysql_password: "mysql123"
-mysql_database: "randomizer"
-#
+mysql_database: randomizer
+
 # MQTT - when mqtt_enable is False, the consecutive mqtt_* variables are not used
-#
-mqtt_enable: False
-mqtt_broker: "mqtt.example.com"
+mqtt_enable: false
+mqtt_broker: mqtt.example.com
 mqtt_topic_pub: "proxies/"
 mqtt_topic_sub: "proxies/#"
-#
+
 # InfluxDB - when influxdb_enable is False, the consecutive influxdb_* variables are not used
-#
-influxdb_enable: False
-influxdb_host: "influxdb.example.com"
+influxdb_enable: false
+influxdb_host: influxdb.example.com
 influxdb_port: 8086
-influxdb_user: "influx_user"
+influxdb_user: influx_user
 influxdb_password: "pa$$w0rd"
-influxdb_database: "randomizerdb"
-influxdb_measurement: "vpn_tracker"
-#
+influxdb_database: randomizerdb
+influxdb_measurement: vpn_tracker
+
 # Gluetun
-#
-container_name: "gluetun"
+container_name: gluetun
 gluetun_healthcheck_port: 6666
 gluetun_control_port: 8000
 gluetun_proxy_port: 8008
-gluetun_path: "/usr/local/docker/gluetun"
-#
+gluetun_path: /usr/local/docker/gluetun
+
 # Control parameters for randomizer
-#
+
 # delay the start of this thing specified in seconds
 start_delay: 5
-#
+
 # min and max range for random execution (in seconds)
-#
 # ttl_min: 7200
 # ttl_max: 14400
 
@@ -70,8 +61,7 @@ ttl_max: 120
 
 ttl_min_debug: 1200
 ttl_max_debug: 2700
-#
+
 # how often to publish details to mqtt (in seconds)
-#
 ttime_mqtt_pub: 900
-checkup_and_pub_interval: ttime_mqtt_pub
+checkup_and_pub_interval: 900
