@@ -17,6 +17,7 @@ jobs:
     env:
       DOCKER_USERNAME: ingestbot
       DOCKER_IMAGE_NAME: randomizer
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: get user with UID 1000
@@ -95,9 +96,10 @@ jobs:
           image-ref: "localbuild/testimage"
           format: "table"
           exit-code: "0"
-          ignore-unfixed: true
+          # ignore-unfixed: true
+          only-fixed: false
           vuln-type: "os,library"
-          severity: "CRITICAL"
+          severity-cutoff: "CRITICAL"
 
       - name: Upload Trivy Report
         uses: actions/upload-artifact@v4
