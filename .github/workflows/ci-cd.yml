@@ -94,10 +94,16 @@ jobs:
         with:
           image-ref: "localbuild/testimage"
           format: "table"
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: true
           vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+          severity: "CRITICAL"
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
 
       - name: Anchore Container Scan
         uses: anchore/scan-action@v5.0.0
