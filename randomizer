@@ -537,7 +537,9 @@ class vpn:
             if line.startswith("SERVER_CITIES"):
                 key, value = line.split("=", 1)
 
-                cities = [c.strip() for c in value.strip().strip('"').split(",") if c.strip()]
+                cities = [
+                    c.strip() for c in value.strip().strip('"').split(",") if c.strip()
+                ]
 
                 if cities:
                     random.shuffle(cities)

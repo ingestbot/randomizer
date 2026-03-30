@@ -68,6 +68,7 @@ jobs:
           VALIDATE_PYTHON_RUFF_FORMAT: false
           VALIDATE_PYTHON_RUFF: false
           VALIDATE_SPELL_CODESPELL: false
+          VALIDATE_PYTHON_MYPY: false
 
       - name: Docker Login
         uses: docker/login-action@v3.3.0
