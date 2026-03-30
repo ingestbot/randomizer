@@ -1,28 +1,26 @@
 #!/usr/bin/python3
 
-##
-## Python Third-Party Modules
-##
-##  - mqtt:
-##      - https://pypi.org/project/paho-mqtt
-##      - python3-paho-mqtt, pip install paho-mqtt
-##  - influx:
-##      - https://pypi.org/project/influxdb
-##      - python3-influxdb, pip install influxdb
-##  - docker:
-##      - https://docker-py.readthedocs.io
-##      - python3-docker, pip install docker
-##  - requests:
-##      - https://requests.readthedocs.io
-##      - python3-requests, pip install requests
-##
-## Docker Compose V2 - https://docs.docker.com/compose/migrate/
-##
-##      'docker compose version'
-##      Docker Compose version v2.*
-##
-## Gluetun VPN client - https://github.com/qdm12/gluetun
-##
+# Python Third-Party Modules
+#
+#  - mqtt:
+#      - https://pypi.org/project/paho-mqtt
+#      - python3-paho-mqtt, pip install paho-mqtt
+#  - influx:
+#      - https://pypi.org/project/influxdb
+#      - python3-influxdb, pip install influxdb
+#  - docker:
+#      - https://docker-py.readthedocs.io
+#      - python3-docker, pip install docker
+#  - requests:
+#      - https://requests.readthedocs.io
+#      - python3-requests, pip install requests
+#
+# Docker Compose V2 - https://docs.docker.com/compose/migrate/
+#
+#      'docker compose version'
+#      Docker Compose version v2.*
+#
+# Gluetun VPN client - https://github.com/qdm12/gluetun
 
 import argparse
 import glob
@@ -225,9 +223,7 @@ class Docker:
         pass
 
     def docker_get_ready_state(self):
-        ##
-        ## Checking for valid ip is an additional state on top of passing healthcheck
-        ##
+        # Checking for valid ip is an additional state on top of passing healthcheck
         i = 15
         while i >= 1:
             my_ipaddr = vpn().get_public_ip()
@@ -275,10 +271,8 @@ class Docker:
             os._exit(1)
 
     def docker_checkup(self):
-        ##
-        ## If a healthcheck passes, we can just quickly return True. A healthcheck indicates
-        ## all supporting mechanisms are functioning as needed.
-        ##
+        # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
+        # all supporting mechanisms are functioning as needed.
         if vpn().get_healthcheck() == "OK":
             logger.info(f"Healthcheck has passed. Continuing...")
             return True
@@ -324,11 +318,11 @@ class Docker:
                         if counter < 10:
                             self.docker_container_start()
 
-                        # There could be a persistent unhealthy status and the counts against that status
+                        # There could be a persistent unhealthy status
+                        # and the counts against that status
                         # should result in a restart (or something).
-
+                        #
                         # See 'x == limit' above for possible fix
-
                         logger.debug(f"Counter is: {counter}")
                         logger.info(f"Waiting for container status...")
                         time.sleep(5)
@@ -383,16 +377,17 @@ class vpn:
         return health
 
     def restart_vpn(self):
-        ##
-        ## gluetun control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
-        ## gluetun healthcheck: https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md
-        ##
-        ## If only a stop were sent, the connection would auto-heal within 6 seconds. But sending
-        ## a 'stopped', and immediately thereafter a 'running', we can save some precious time in
-        ## returning to service.
-        ##
-        ## Re: alternating between endpoint /v1/openvpn, /v1/updater, and /v1/vpn see: https://github.com/qdm12/gluetun/issues/2277
-        ##
+        # gluetun control server:
+        #   https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+        # gluetun healthcheck:
+        #   https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md
+        #
+        # If only a stop were sent, the connection would auto-heal within 6 seconds. But sending
+        # a 'stopped', and immediately thereafter a 'running', we can save some precious time in
+        # returning to service.
+        #
+        # Re: alternating between endpoint /v1/openvpn, /v1/updater, and /v1/vpn
+        #   see: https://github.com/qdm12/gluetun/issues/2277
         payload = {"status": "stopped"}
         headers = {"Content-Type": "application/json"}
         send_request(
@@ -435,10 +430,8 @@ class vpn:
         return ipaddr_public
 
     def get_gw_name(self, ipaddr):
-        ##
         # Using the servers.json file provided by gluetun, this matches
         # the gateway ip to it's associated hostname.
-        ##
         try:
             with open(gluetun_servers_json) as f:
                 jblob = f.read()
@@ -453,23 +446,18 @@ class vpn:
             logger.debug(f"WARNING: servers is null")
             servers = []
 
-        #
         # This is an example of redefining servers with specified regions to exclude.
         #
         # excluded_regions = {'TX', 'FL', 'GA'}
         # servers = [ ep for ep in servers if ep.get('region') not in excluded_regions ]
-        #
-
         for ep in servers:
             for ip in ep["ips"]:
                 if ip == ipaddr:
                     return ep["hostname"]
 
     def get_gw_ip(self):
-        ##
         # This gets the ip address of the gateway we're connected to. Currently this is the
         # only means of doing this with gluetun.
-        ##
         try:
             container = Docker().docker_container_get()
             container_logs = container.logs()
@@ -510,10 +498,8 @@ class vpn:
         return provider_name
 
     def shuffle_provider(self):
-        ##
-        ## https://stackoverflow.com/questions/6648493/how-to-open-a-file-for-both-reading-and-writing
-        ## https://stackoverflow.com/questions/34575336/should-we-open-the-file-more-than-once-to-read-it
-        ##
+        # https://stackoverflow.com/questions/6648493/how-to-open-a-file-for-both-reading-and-writing
+        # https://stackoverflow.com/questions/34575336/should-we-open-the-file-more-than-once-to-read-it
         logger.info(f"Shuffling provider...")
         provider_files = []
         provider_name_current = self.get_provider_name()
@@ -636,9 +622,8 @@ class mqtt:
         client.disconnect()
 
     def mqtt_get_messages(self):
-        #
-        # Returns a dictionary containing all mqtt messages 'proxies/#' with hostname as key and associated details as vals
-        #
+        # Returns a dictionary containing all mqtt messages 'proxies/#' with
+        # hostname as key and associated details as vals
         mdict = {}
 
         def on_connect(client, userdata, flags, rc, properties=None):
