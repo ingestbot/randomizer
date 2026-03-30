@@ -1,0 +1,11 @@
+.idea
+.DS_Store
+*.pyc
+*.md
+*.swp
+*.bk
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.vscode/
