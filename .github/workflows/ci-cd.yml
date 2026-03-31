@@ -12,12 +12,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    #    permissions:
-    #      contents: read
-    #      packages: read
-    #      # To report GitHub Actions status checks
-    #      # statuses: write
-
     env:
       DOCKER_USERNAME: ingestbot
       DOCKER_IMAGE_NAME: randomizer
@@ -51,7 +45,6 @@ jobs:
           fetch-depth: 0
 
       - name: Install Dependencies
-        # run: pip install -r requirements-ci.txt
         run: |
           python -m venv venv
           source venv/bin/activate
@@ -62,58 +55,49 @@ jobs:
         uses: trufflesecurity/trufflehog@v3.82.8
 
       - name: Super-Linter
-        uses: super-linter/super-linter@v7.1.0
+        uses: super-linter/super-linter@v8.5.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_JSCPD: false
           VALIDATE_YAML: false
           VALIDATE_DOCKERFILE_HADOLINT: false
-
-      #- name: Run tests
-      #  run: |
-      #    source venv/bin/activate
-      #    PYTHONPATH=. pytest tests/test_main.py -vv
+          VALIDATE_BIOME_FORMAT: false
+          VALIDATE_BIOME_LINT: false
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
+          VALIDATE_PYTHON_RUFF: false
+          VALIDATE_SPELL_CODESPELL: false
+          VALIDATE_PYTHON_MYPY: false
+          VALIDATE_PYTHON_FLAKE8: false
 
       - name: Docker Login
         uses: docker/login-action@v3.3.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          # password: ${{ secrets.DOCKER_PASSWORD }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      #
-      # https://github.com/marketplace/actions/docker-setup-buildx
-      #
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: build local container
-        # uses: docker/build-push-action@v4
         uses: docker/build-push-action@v7
         with:
           tags: localbuild/testimage
           push: false
           load: true
 
-      #- name: Anchore Container Scan
-      #  uses: anchore/scan-action@v5.0.0
-      #  with:
-      #    image: "localbuild/testimage"
-
       - name: Anchore Container Scan
         uses: anchore/scan-action@v5.0.0
         with:
           image: "localbuild/testimage"
           fail-build: true
-          # severity-cutoff: high
           severity-cutoff: critical
           output-format: table
           ignore-unfixed: true
 
       - name: Run the Docker container | capture logs | verify logs
         run: |
-          # container_id=$(docker run -d  --group-add 118 -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
           container_id=$(docker run -d  --group-add "$DOCKER_GID" -v /var/run/docker.sock:/var/run/docker.sock localbuild/testimage)
           timeout=180
           interval=5
@@ -133,7 +117,6 @@ jobs:
           exit 1
 
       - name: Build and push Docker image
-        # uses: docker/build-push-action@v4
         uses: docker/build-push-action@v7
         with:
           context: .

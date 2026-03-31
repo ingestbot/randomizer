@@ -1,53 +1,50 @@
 #!/usr/bin/python3
 
-##
-## Python Third-Party Modules
-##
-##  - mqtt:
-##      - https://pypi.org/project/paho-mqtt
-##      - python3-paho-mqtt, pip install paho-mqtt
-##  - influx:
-##      - https://pypi.org/project/influxdb
-##      - python3-influxdb, pip install influxdb
-##  - docker:
-##      - https://docker-py.readthedocs.io
-##      - python3-docker, pip install docker
-##  - requests:
-##      - https://requests.readthedocs.io
-##      - python3-requests, pip install requests
-##
-## Docker Compose V2 - https://docs.docker.com/compose/migrate/
-##
-##      'docker compose version'
-##      Docker Compose version v2.*
-##
-## Gluetun VPN client - https://github.com/qdm12/gluetun
-##
+# Python Third-Party Modules
+#
+#  - mqtt:
+#      - https://pypi.org/project/paho-mqtt
+#      - python3-paho-mqtt, pip install paho-mqtt
+#  - influx:
+#      - https://pypi.org/project/influxdb
+#      - python3-influxdb, pip install influxdb
+#  - docker:
+#      - https://docker-py.readthedocs.io
+#      - python3-docker, pip install docker
+#  - requests:
+#      - https://requests.readthedocs.io
+#      - python3-requests, pip install requests
+#
+# Docker Compose V2 - https://docs.docker.com/compose/migrate/
+#
+#      'docker compose version'
+#      Docker Compose version v2.*
+#
+# Gluetun VPN client - https://github.com/qdm12/gluetun
 
 import argparse
-import docker
 import glob
 import json
 import logging
 import logging.handlers
 import os
-import pymysql
 import random
 import re
-import requests
 import socket
 import subprocess
 import sys
 import threading
 import time
-import yaml
-
-import paho.mqtt.client as mqtt_client
-
 from datetime import datetime, timezone
-from influxdb import InfluxDBClient
-from requests import ConnectionError
 
+import docker
+import paho.mqtt.client as mqtt_client
+import pymysql
+import requests
+import yaml
+from influxdb import InfluxDBClient
+from influxdb.exceptions import InfluxDBClientError
+from requests import ConnectionError
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -120,10 +117,10 @@ client = docker.from_env()
 # https://www.delftstack.com/howto/python/python-logging-to-file-and-console/
 # handler = [logging.handlers.SysLogHandler(address='/dev/log'), logging.StreamHandler(sys.stdout)]
 #
-l = logging.getLogger("randomizer")
+logger = logging.getLogger("randomizer")
 
 level = logging.DEBUG if debug else logging.INFO
-l.setLevel(level)
+logger.setLevel(level)
 
 if config["is_docker_container"]:
     handler = logging.StreamHandler(sys.stdout)
@@ -137,7 +134,7 @@ else:
     )
 
 handler.setFormatter(formatter)
-l.addHandler(handler)
+logger.addHandler(handler)
 
 
 def send_request(method=None, url=None, data=None, headers=None, proxy=None):
@@ -166,12 +163,12 @@ def send_request(method=None, url=None, data=None, headers=None, proxy=None):
             break
         except ConnectionError as e:
             if time.time() > start_time + connection_timeout:
-                l.debug(f"All request attempts have failed.")
-                l.debug(f"{e}")
+                logger.debug(f"All request attempts have failed.")
+                logger.debug(f"{e}")
                 response = "NOTOK"
                 break
             else:
-                l.debug(f"Request timed out. Trying again.")
+                logger.debug(f"Request timed out. Trying again.")
                 time.sleep(1)
     if r and r.status_code == 200:
         if "application/json" in r.headers.get("Content-Type", ""):
@@ -190,9 +187,9 @@ def send_request(method=None, url=None, data=None, headers=None, proxy=None):
 
 
 def influxdb_pub(vpn_gw_name, ipaddr_public):
-    l.info(f"Publishing details to influxdb...")
+    logger.info(f"Publishing details to influxdb...")
     time_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    ttime_now = time.time()
+    # ttime_now = time.time()
     d = {}
     d["measurement"] = influxdb_measurement
     d["time"] = time_now
@@ -214,20 +211,19 @@ def influxdb_pub(vpn_gw_name, ipaddr_public):
             ssl=True,
             verify_ssl=True,
         ).write_points([d])
-    except:
-        l.info(f"Publishing details to influxdb failed but continuing...")
+    # except:
+    except InfluxDBClientError as e:
+        logger.info(f"Publishing details to influxdb failed but continuing...")
+        logger.debug(f"error: {e}")
         pass
 
 
 class Docker:
-
     def __init__(self):
         pass
 
     def docker_get_ready_state(self):
-        ##
-        ## Checking for valid ip is an additional state on top of passing healthcheck
-        ##
+        # Checking for valid ip is an additional state on top of passing healthcheck
         i = 15
         while i >= 1:
             my_ipaddr = vpn().get_public_ip()
@@ -235,23 +231,23 @@ class Docker:
                 socket.inet_aton(my_ipaddr)
                 return True
             except socket.error as e:
-                l.info(f"Waiting for valid ip address...")
-                l.debug(f"error: {e}")
+                logger.info(f"Waiting for valid ip address...")
+                logger.debug(f"error: {e}")
                 time.sleep(1)
                 i -= 1
         return False
 
     def docker_container_start(self):
         if not os.path.exists(compose_file_path):
-            l.info(f"No Docker compose file ({compose_file_path}). Exiting.")
+            logger.info(f"No Docker compose file ({compose_file_path}). Exiting.")
             os._exit(1)
-        l.info(f"Starting docker container...")
+        logger.info(f"Starting docker container...")
         try:
             subprocess.call(["docker", "compose", "-f", compose_file_path, "up", "-d"])
             time.sleep(5)
         except ValueError as e:
-            l.debug(f"{e}")
-            l.info(f"Start of docker container failed.")
+            logger.debug(f"{e}")
+            logger.info(f"Start of docker container failed.")
             return False
 
     def docker_container_get(self):
@@ -263,7 +259,7 @@ class Docker:
                 break
             except docker.errors.NotFound:
                 if time.time() > start_time + connection_timeout:
-                    l.info(f"Unable to get docker container details.")
+                    logger.info(f"Unable to get docker container details.")
                     os._exit(1)
                 else:
                     self.docker_container_start()
@@ -271,16 +267,14 @@ class Docker:
         if container:
             return container
         else:
-            l.info(f"Unable to get docker container details.")
+            logger.info(f"Unable to get docker container details.")
             os._exit(1)
 
     def docker_checkup(self):
-        ##
-        ## If a healthcheck passes, we can just quickly return True. A healthcheck indicates
-        ## all supporting mechanisms are functioning as needed.
-        ##
+        # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
+        # all supporting mechanisms are functioning as needed.
         if vpn().get_healthcheck() == "OK":
-            l.info(f"Healthcheck has passed. Continuing...")
+            logger.info(f"Healthcheck has passed. Continuing...")
             return True
         else:
             cstate = False
@@ -290,7 +284,6 @@ class Docker:
         while cstate is False:
             for x in range(counter):
                 try:
-
                     container = self.docker_container_get()
 
                     if (
@@ -299,49 +292,47 @@ class Docker:
                     ):
                         running = container.attrs["State"]["Running"]
                         healthy = container.attrs["State"]["Health"]["Status"]
-                        l.debug(f"container_state_running: {running}")
-                        l.debug(f"container_state_healthy: {healthy}")
+                        logger.debug(f"container_state_running: {running}")
+                        logger.debug(f"container_state_healthy: {healthy}")
                     else:
-                        l.info(f"Container is not running, restarting...")
+                        logger.info(f"Container is not running, restarting...")
                         self.docker_container_start()
 
                     if x == limit - 1:
-
                         # Make one last ditch attempt to start this. If this doesn't work, we
                         # will just bail on exit(1)
 
-                        # l.info(f'Attempting to start the container before exiting...')
+                        # logger.info(f'Attempting to start the container before exiting...')
                         # self.docker_container_start()
 
-                        l.info(f"Cannot start container. Exiting.")
+                        logger.info(f"Cannot start container. Exiting.")
                         os._exit(1)
                     if running is True and healthy == "healthy":
-                        l.info(f"Container is running and healthy.")
+                        logger.info(f"Container is running and healthy.")
                         cstate = True
                         break
 
                     if running is True and (
                         (healthy == "starting") or (healthy == "unhealthy")
                     ):
-
                         if counter < 10:
                             self.docker_container_start()
 
-                        # There could be a persistent unhealthy status and the counts against that status
+                        # There could be a persistent unhealthy status
+                        # and the counts against that status
                         # should result in a restart (or something).
-
+                        #
                         # See 'x == limit' above for possible fix
-
-                        l.debug(f"Counter is: {counter}")
-                        l.info(f"Waiting for container status...")
+                        logger.debug(f"Counter is: {counter}")
+                        logger.info(f"Waiting for container status...")
                         time.sleep(5)
                     if running is False:
-                        l.info(f"Container is not running, restarting...")
+                        logger.info(f"Container is not running, restarting...")
                         self.docker_container_start()
 
                     counter = counter - 1
                 except ValueError as e:
-                    l.debug(f"{e}")
+                    logger.debug(f"{e}")
                     os._exit(1)
 
         return True
@@ -356,7 +347,7 @@ class Docker:
                 try:
                     socket.inet_aton(my_ipaddr)
                 except socket.error as e:
-                    l.debug(f"error: {e}")
+                    logger.debug(f"error: {e}")
 
                 vpn_gw_name = vpn().get_gw_name(vpn().get_gw_ip())
 
@@ -368,9 +359,9 @@ class Docker:
                     influxdb_pub(vpn_gw_name, my_ipaddr)
 
             else:
-                l.info("docker_checkup fail")
+                logger.info("docker_checkup fail")
         except ValueError as e:
-            l.debug(f"error: {e}")
+            logger.debug(f"error: {e}")
             return False
 
 
@@ -379,23 +370,24 @@ class vpn:
         pass
 
     def get_healthcheck(self):
-        l.debug(f"Running gluetun healthcheck against: {hostname_fqdn}")
+        logger.debug(f"Running gluetun healthcheck against: {hostname_fqdn}")
         health = send_request(
             method="get", url=f"http://{hostname_fqdn}:" + str(gluetun_healthcheck_port)
         )
         return health
 
     def restart_vpn(self):
-        ##
-        ## gluetun control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
-        ## gluetun healthcheck: https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md
-        ##
-        ## If only a stop were sent, the connection would auto-heal within 6 seconds. But sending
-        ## a 'stopped', and immediately thereafter a 'running', we can save some precious time in
-        ## returning to service.
-        ##
-        ## Re: alternating between endpoint /v1/openvpn, /v1/updater, and /v1/vpn see: https://github.com/qdm12/gluetun/issues/2277
-        ##
+        # gluetun control server:
+        #   https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+        # gluetun healthcheck:
+        #   https://github.com/qdm12/gluetun-wiki/blob/main/faq/healthcheck.md
+        #
+        # If only a stop were sent, the connection would auto-heal within 6 seconds. But sending
+        # a 'stopped', and immediately thereafter a 'running', we can save some precious time in
+        # returning to service.
+        #
+        # Re: alternating between endpoint /v1/openvpn, /v1/updater, and /v1/vpn
+        #   see: https://github.com/qdm12/gluetun/issues/2277
         payload = {"status": "stopped"}
         headers = {"Content-Type": "application/json"}
         send_request(
@@ -433,51 +425,44 @@ class vpn:
             proxy=f"http://{hostname_fqdn}:{gluetun_proxy_port}",
         )
 
-        l.debug(f"Public ipaddr: {ipaddr_public}")
+        logger.debug(f"Public ipaddr: {ipaddr_public}")
 
         return ipaddr_public
 
     def get_gw_name(self, ipaddr):
-        ##
         # Using the servers.json file provided by gluetun, this matches
         # the gateway ip to it's associated hostname.
-        ##
         try:
             with open(gluetun_servers_json) as f:
                 jblob = f.read()
         except ValueError as e:
-            l.debug(f"{e}")
+            logger.debug(f"{e}")
             os._exit(1)
         js = json.loads(jblob)
         vpn_provider = self.get_provider_name()
         if vpn_provider in js:
             servers = js[vpn_provider]["servers"]
         else:
-            l.debug(f"WARNING: servers is null")
+            logger.debug(f"WARNING: servers is null")
             servers = []
 
-        #
         # This is an example of redefining servers with specified regions to exclude.
         #
         # excluded_regions = {'TX', 'FL', 'GA'}
         # servers = [ ep for ep in servers if ep.get('region') not in excluded_regions ]
-        #
-
         for ep in servers:
             for ip in ep["ips"]:
                 if ip == ipaddr:
                     return ep["hostname"]
 
     def get_gw_ip(self):
-        ##
         # This gets the ip address of the gateway we're connected to. Currently this is the
         # only means of doing this with gluetun.
-        ##
         try:
             container = Docker().docker_container_get()
             container_logs = container.logs()
         except ValueError as e:
-            l.debug(f"{e}")
+            logger.debug(f"{e}")
             os._exit(1)
         matches = []
         for line in container_logs.decode().splitlines():
@@ -491,17 +476,17 @@ class vpn:
 
     def randomizer(self):
         if vpn().get_healthcheck() == "OK":
-            l.debug(
+            logger.debug(
                 f"Healthcheck has passed. Restarting VPN via gluetun control server"
             )
             vpn().restart_vpn()
             time.sleep(3)
-            l.debug(f"VPN has been restarted. VPN IP address renewed.")
+            logger.debug(f"VPN has been restarted. VPN IP address renewed.")
             if Docker().docker_get_ready_state():
-                l.debug(f"Ready state is OK. Proceeding to Docker checkup...")
+                logger.debug(f"Ready state is OK. Proceeding to Docker checkup...")
                 Docker().docker_checkup_and_pub()
         else:
-            l.debug(f"Healthcheck has NOT passed. Trying a Docker checkup...")
+            logger.debug(f"Healthcheck has NOT passed. Trying a Docker checkup...")
             Docker().docker_checkup_and_pub()
 
     def get_provider_name(self):
@@ -513,11 +498,9 @@ class vpn:
         return provider_name
 
     def shuffle_provider(self):
-        ##
-        ## https://stackoverflow.com/questions/6648493/how-to-open-a-file-for-both-reading-and-writing
-        ## https://stackoverflow.com/questions/34575336/should-we-open-the-file-more-than-once-to-read-it
-        ##
-        l.info(f"Shuffling provider...")
+        # https://stackoverflow.com/questions/6648493/how-to-open-a-file-for-both-reading-and-writing
+        # https://stackoverflow.com/questions/34575336/should-we-open-the-file-more-than-once-to-read-it
+        logger.info(f"Shuffling provider...")
         provider_files = []
         provider_name_current = self.get_provider_name()
         env_file = os.path.join(gluetun_path, ".env")
@@ -537,7 +520,9 @@ class vpn:
             if line.startswith("SERVER_CITIES"):
                 key, value = line.split("=", 1)
 
-                cities = [c.strip() for c in value.strip().strip('"').split(",") if c.strip()]
+                cities = [
+                    c.strip() for c in value.strip().strip('"').split(",") if c.strip()
+                ]
 
                 if cities:
                     random.shuffle(cities)
@@ -549,30 +534,29 @@ class vpn:
         with open(env_file, "w") as env:
             env.writelines(new_lines)
 
-        lines = [l.strip() for l in new_lines]
+        lines = [line.strip() for line in new_lines]
 
         for line in lines:
             if "VPN_SERVICE_PROVIDER" in line:
                 provider_name_new = line.split("=", 1)[1]
 
-        l.info(f"Current provider is: {provider_name_current}")
-        l.info(f"New provider is: {provider_name_new}")
+        logger.info(f"Current provider is: {provider_name_current}")
+        logger.info(f"New provider is: {provider_name_new}")
 
         #
         # container will reload changes to .env with 'docker compose up -d'
         #  https://stackoverflow.com/questions/42149529/how-to-reload-environment-variables-in-docker-compose-container-with-minimum-dow
         #
         if provider_name_current == provider_name_new:
-            l.debug(f"VPN providers are the same. No restart neeeded.")
+            logger.debug(f"VPN providers are the same. No restart neeeded.")
             pass
         else:
-            l.info(f"Provider has changed. Reloading container .env")
+            logger.info(f"Provider has changed. Reloading container .env")
             Docker().docker_container_start()
 
         Docker().docker_checkup_and_pub()
 
     def get_gw_other(self):
-
         if mqtt_enable or mysql_enable:
             if mqtt_enable:
                 mdict = mqtt().mqtt_get_messages()
@@ -580,7 +564,7 @@ class vpn:
                 mdict = mysql().mysql_get_messages()
                 mdict = {item["instance_name"]: item for item in mdict}
 
-            l.debug(f"mdict: {mdict}")
+            logger.debug(f"mdict: {mdict}")
 
             gw_other = []
 
@@ -590,7 +574,7 @@ class vpn:
                 elif val.get("vpn_gateway"):
                     gw_other.append(val["vpn_gateway"])
 
-            l.debug(f"Current gateway list shows: {gw_other}")
+            logger.debug(f"Current gateway list shows: {gw_other}")
             return gw_other
         else:
             return None
@@ -606,7 +590,7 @@ class vpn:
                     vpn().restart_vpn()
                     time.sleep(15)
 
-            l.debug(f"{gw_current} is not in this list: {gw_other}")
+            logger.debug(f"{gw_current} is not in this list: {gw_other}")
             return gw_current
         else:
             return None
@@ -622,7 +606,7 @@ class mqtt:
         #
         # This takes two strings and publishes to mqtt with datetime.
         #
-        l.info(f"Publishing details to mqtt...")
+        logger.info(f"Publishing details to mqtt...")
         client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2)
         client.connect(self.mqtt_broker)
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -638,9 +622,8 @@ class mqtt:
         client.disconnect()
 
     def mqtt_get_messages(self):
-        #
-        # Returns a dictionary containing all mqtt messages 'proxies/#' with hostname as key and associated details as vals
-        #
+        # Returns a dictionary containing all mqtt messages 'proxies/#' with
+        # hostname as key and associated details as vals
         mdict = {}
 
         def on_connect(client, userdata, flags, rc, properties=None):
@@ -693,12 +676,11 @@ class mysql:
             self.connection.close()
 
     def mysql_pub(self, vpn_gateway, vpn_ipaddr):
-
-        l.info(f"Publishing details to mysql...")
+        logger.info(f"Publishing details to mysql...")
         self.mysql_connect()
 
         if not self.connection:
-            l.info(f"mysql: Error connecting to mysql")
+            logger.info(f"mysql: Error connecting to mysql")
             return
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -720,16 +702,15 @@ class mysql:
             self.cursor.execute(insert_query, status)
             self.connection.commit()
         except Exception as e:
-            l.info(f"mysql: Error inserting record: {e}")
+            logger.info(f"mysql: Error inserting record: {e}")
 
         self.mysql_close()
 
     def mysql_get_messages(self):
-
         self.mysql_connect()
 
         if not self.connection:
-            l.info(f"mysql: Error connecting to mysql")
+            logger.info(f"mysql: Error connecting to mysql")
             return []
 
         query = """
@@ -743,15 +724,15 @@ class mysql:
         try:
             self.cursor.execute(query)
             results = self.cursor.fetchall()
-            l.debug(f"mysql_get_messages result: {results}")
+            logger.debug(f"mysql_get_messages result: {results}")
             column_names = [desc[0] for desc in self.cursor.description]
             messages = [dict(zip(column_names, row)) for row in results]
-            l.debug(f"mysql_get_messages messages: {messages}")
+            logger.debug(f"mysql_get_messages messages: {messages}")
 
             return messages
 
         except Exception as e:
-            l.info(f"mysql: Error retrieving records: {e}")
+            logger.info(f"mysql: Error retrieving records: {e}")
             return json.dumps([])
 
         self.mysql_close()
@@ -766,7 +747,7 @@ class TimerThread(threading.Thread):
 
     def run(self):
         while True:
-            l.info(f"{str(self.function)} is sleeping for: {self.interval}")
+            logger.info(f"{str(self.function)} is sleeping for: {self.interval}")
             time.sleep(self.interval)
             self.function()
             if self.function == v.randomizer:
@@ -776,7 +757,7 @@ class TimerThread(threading.Thread):
 
 
 if __name__ == "__main__":
-    l.info(f"Starting randomizer...")
+    logger.info(f"Starting randomizer...")
     d = Docker()
     v = vpn()
     timer1 = TimerThread(start_delay, v.randomizer)
