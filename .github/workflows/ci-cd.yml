@@ -58,18 +58,18 @@ jobs:
         uses: super-linter/super-linter@v8.5.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_PYTHON_PYLINT: false
-          VALIDATE_JSCPD: false
-          VALIDATE_YAML: false
-          VALIDATE_DOCKERFILE_HADOLINT: false
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
+          VALIDATE_DOCKERFILE_HADOLINT: false
           VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
-          VALIDATE_PYTHON_RUFF_FORMAT: false
-          VALIDATE_PYTHON_RUFF: false
-          VALIDATE_SPELL_CODESPELL: false
-          VALIDATE_PYTHON_MYPY: false
+          VALIDATE_JSCPD: false
           VALIDATE_PYTHON_FLAKE8: false
+          VALIDATE_PYTHON_MYPY: false
+          VALIDATE_PYTHON_PYLINT: false
+          VALIDATE_PYTHON_RUFF: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
+          VALIDATE_SPELL_CODESPELL: false
+          VALIDATE_YAML: false
 
       - name: Docker Login
         uses: docker/login-action@v3.3.0
