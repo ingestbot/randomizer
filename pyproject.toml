@@ -1,7 +1,0 @@
-[tool.ruff.lint]
-ignore = ["F541"]
-
-[tool.flake8]
-max-line-length = 100
-extend-ignore = ["E203", "W503"]
-ignore = ["F541", "E266"]

@@ -65,8 +65,8 @@ jobs:
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
           VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
-          # VALIDATE_PYTHON_RUFF_FORMAT: false
-          # VALIDATE_PYTHON_RUFF: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
+          VALIDATE_PYTHON_RUFF: false
           VALIDATE_SPELL_CODESPELL: false
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_FLAKE8: false

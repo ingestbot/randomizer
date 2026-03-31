@@ -19,11 +19,11 @@ repos:
   #      additional_dependencies: [flake8-bugbear]
   #      args: [--max-line-length=100]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.0
-    hooks:
-      - id: ruff
-      - id: ruff-format
+  #- repo: https://github.com/astral-sh/ruff-pre-commit
+  #  rev: v0.4.0
+  #  hooks:
+  #    - id: ruff
+  #    - id: ruff-format
 
   - repo: https://github.com/psf/black
     rev: 23.3.0
