@@ -241,6 +241,44 @@ class Docker:
         if not os.path.exists(compose_file_path):
             logger.info(f"No Docker compose file ({compose_file_path}). Exiting.")
             os._exit(1)
+
+        logger.info("Starting docker container...")
+
+        for attempt in range(3):
+            try:
+                subprocess.run(
+                    [
+                        "docker",
+                        "compose",
+                        "-f",
+                        compose_file_path,
+                        "up",
+                        "-d",
+                        "--force-recreate",
+                    ],
+                    check=True,
+                )
+
+                # wait up to ~30 seconds for healthy state
+                for _ in range(6):
+                    if self.docker_checkup():
+                        logger.info("Containers started successfully.")
+                        return True
+                    time.sleep(5)
+
+            except subprocess.CalledProcessError as e:
+                logger.warning(f"Attempt {attempt+1} failed: {e}")
+
+            logger.info("Retrying container start...")
+            time.sleep(5)
+
+        logger.error("Failed to start containers after retries.")
+        return False
+
+    def docker_container_start_old(self):
+        if not os.path.exists(compose_file_path):
+            logger.info(f"No Docker compose file ({compose_file_path}). Exiting.")
+            os._exit(1)
         logger.info(f"Starting docker container...")
         try:
             subprocess.call(["docker", "compose", "-f", compose_file_path, "up", "-d"])
@@ -271,6 +309,31 @@ class Docker:
             os._exit(1)
 
     def docker_checkup(self):
+        if vpn().get_healthcheck() == "OK":
+            logger.info(f"Healthcheck has passed. Continuing...")
+            return True
+
+        try:
+            container = self.docker_container_get()
+
+            running = container.attrs["State"]["Running"]
+            healthy = container.attrs["State"]["Health"]["Status"]
+
+            logger.debug(f"container_state_running: {running}")
+            logger.debug(f"container_state_healthy: {healthy}")
+
+            if running and healthy == "healthy":
+                logger.info(f"Container is running and healthy.")
+                return True
+
+            logger.info(f"Container not ready (running={running}, health={healthy})")
+            return False
+
+        except Exception as e:
+            logger.debug(f"{e}")
+            return False
+
+    def docker_checkup_old(self):
         # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
         # all supporting mechanisms are functioning as needed.
         if vpn().get_healthcheck() == "OK":
