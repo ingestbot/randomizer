@@ -247,8 +247,16 @@ class Docker:
         for attempt in range(3):
             try:
                 subprocess.run(
-                    ["docker", "compose", "-f", compose_file_path, "up", "-d", "--force-recreate"],
-                    check=True
+                    [
+                        "docker",
+                        "compose",
+                        "-f",
+                        compose_file_path,
+                        "up",
+                        "-d",
+                        "--force-recreate",
+                    ],
+                    check=True,
                 )
 
                 # wait up to ~30 seconds for healthy state
