@@ -23,7 +23,6 @@
 # Gluetun VPN client - https://github.com/qdm12/gluetun
 
 import argparse
-import cryptography
 import glob
 import json
 import logging
@@ -38,6 +37,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
+import cryptography
 import docker
 import paho.mqtt.client as mqtt_client
 import pymysql
