@@ -23,6 +23,7 @@
 # Gluetun VPN client - https://github.com/qdm12/gluetun
 
 import argparse
+import cryptography
 import glob
 import json
 import logging
