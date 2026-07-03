@@ -270,8 +270,8 @@ class Docker:
         else:
             logger.info(f"Unable to get docker container details.")
             os._exit(1)
-
-    def docker_checkup(self):
+    
+    def docker_checkup_old(self):
         # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
         # all supporting mechanisms are functioning as needed.
         if vpn().get_healthcheck() == "OK":
@@ -332,6 +332,91 @@ class Docker:
                         self.docker_container_start()
 
                     counter = counter - 1
+                except ValueError as e:
+                    logger.debug(f"{e}")
+                    os._exit(1)
+
+        return True
+
+    def docker_checkup(self):
+        # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
+        # all supporting mechanisms are functioning as needed.
+        if vpn().get_healthcheck() == "OK":
+            logger.info(f"Healthcheck has passed. Continuing...")
+            return True
+        else:
+            cstate = False
+
+        counter = 15
+        limit = counter
+
+        # NEW: Count consecutive unhealthy checks
+        unhealthy_count = 0
+
+        while cstate is False:
+            for x in range(counter):
+                try:
+                    container = self.docker_container_get()
+
+                    if (
+                        container.attrs["State"]["Running"]
+                        and container.attrs["State"]["Health"]["Status"]
+                    ):
+                        running = container.attrs["State"]["Running"]
+                        healthy = container.attrs["State"]["Health"]["Status"]
+                        logger.debug(f"container_state_running: {running}")
+                        logger.debug(f"container_state_healthy: {healthy}")
+                    else:
+                        logger.info(f"Container is not running, restarting...")
+                        self.docker_container_start()
+
+                    if x == limit - 1:
+                        logger.info(f"Cannot start container. Exiting.")
+                        os._exit(1)
+
+                    if running is True and healthy == "healthy":
+                        # NEW: Reset unhealthy counter
+                        unhealthy_count = 0
+
+                        logger.info(f"Container is running and healthy.")
+                        cstate = True
+                        break
+
+                    if running is True and (
+                        (healthy == "starting") or (healthy == "unhealthy")
+                    ):
+
+                        # NEW: Track consecutive unhealthy states
+                        if healthy == "unhealthy":
+                            unhealthy_count += 1
+                            logger.info(
+                                f"Container unhealthy ({unhealthy_count}/5)"
+                            )
+
+                            if unhealthy_count >= 5:
+                                logger.info(
+                                    "Container unhealthy 5 times in a row. Shuffling VPN provider."
+                                )
+                                vpn().shuffle_provider()
+                                unhealthy_count = 0
+
+                        else:
+                            # Container is only starting, so reset the streak
+                            unhealthy_count = 0
+
+                        if counter < 10:
+                            self.docker_container_start()
+
+                        logger.debug(f"Counter is: {counter}")
+                        logger.info(f"Waiting for container status...")
+                        time.sleep(5)
+
+                    if running is False:
+                        logger.info(f"Container is not running, restarting...")
+                        self.docker_container_start()
+
+                    counter = counter - 1
+
                 except ValueError as e:
                     logger.debug(f"{e}")
                     os._exit(1)
