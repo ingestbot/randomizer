@@ -270,7 +270,7 @@ class Docker:
         else:
             logger.info(f"Unable to get docker container details.")
             os._exit(1)
-    
+
     def docker_checkup_old(self):
         # If a healthcheck passes, we can just quickly return True. A healthcheck indicates
         # all supporting mechanisms are functioning as needed.
@@ -389,9 +389,7 @@ class Docker:
                         # NEW: Track consecutive unhealthy states
                         if healthy == "unhealthy":
                             unhealthy_count += 1
-                            logger.info(
-                                f"Container unhealthy ({unhealthy_count}/5)"
-                            )
+                            logger.info(f"Container unhealthy ({unhealthy_count}/5)")
 
                             if unhealthy_count >= 5:
                                 logger.info(
