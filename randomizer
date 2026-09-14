@@ -95,8 +95,6 @@ if config["is_docker_container"]:
 else:
     gluetun_path = config["gluetun_path"]
 
-gluetun_servers_json = os.path.join(gluetun_path, "gluetun_config", "servers.json")
-
 start_delay = config["start_delay"]
 
 ttl_min = config["ttl_min"]
@@ -190,7 +188,6 @@ def send_request(method=None, url=None, data=None, headers=None, proxy=None):
 def influxdb_pub(vpn_gw_name, ipaddr_public):
     logger.info(f"Publishing details to influxdb...")
     time_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    # ttime_now = time.time()
     d = {}
     d["measurement"] = influxdb_measurement
     d["time"] = time_now
@@ -212,7 +209,6 @@ def influxdb_pub(vpn_gw_name, ipaddr_public):
             ssl=True,
             verify_ssl=True,
         ).write_points([d])
-    # except:
     except InfluxDBClientError as e:
         logger.info(f"Publishing details to influxdb failed but continuing...")
         logger.debug(f"error: {e}")
@@ -221,7 +217,25 @@ def influxdb_pub(vpn_gw_name, ipaddr_public):
 
 class Docker:
     def __init__(self):
-        pass
+        self.client = docker.from_env()
+
+    def get_gluetun_server_files(self, gluetun_path):
+        gluetun = self.client.containers.get("gluetun")
+
+        providers = []
+
+        for env in gluetun.attrs["Config"]["Env"]:
+            if env.startswith("UPDATER_VPN_SERVICE_PROVIDERS="):
+                providers = env.split("=", 1)[1].strip('"').split(",")
+                break
+
+        servers_path = os.path.join(gluetun_path, "gluetun_config", "servers")
+
+        return [
+            os.path.join(servers_path, f"{provider.strip()}.json")
+            for provider in providers
+            if provider.strip()
+        ]
 
     def docker_get_ready_state(self):
         # Checking for valid ip is an additional state on top of passing healthcheck
@@ -514,30 +528,26 @@ class vpn:
         return ipaddr_public
 
     def get_gw_name(self, ipaddr):
-        # Using the servers.json file provided by gluetun, this matches
-        # the gateway ip to it's associated hostname.
-        try:
-            with open(gluetun_servers_json) as f:
-                jblob = f.read()
-        except ValueError as e:
-            logger.debug(f"{e}")
-            os._exit(1)
-        js = json.loads(jblob)
-        vpn_provider = self.get_provider_name()
-        if vpn_provider in js:
-            servers = js[vpn_provider]["servers"]
-        else:
-            logger.debug(f"WARNING: servers is null")
-            servers = []
+        # Using the servers.json files provided by gluetun, this matches
+        # the gateway IP to its associated hostname.
 
-        # This is an example of redefining servers with specified regions to exclude.
-        #
-        # excluded_regions = {'TX', 'FL', 'GA'}
-        # servers = [ ep for ep in servers if ep.get('region') not in excluded_regions ]
-        for ep in servers:
-            for ip in ep["ips"]:
-                if ip == ipaddr:
-                    return ep["hostname"]
+        gluetun_servers_json = Docker().get_gluetun_server_files(gluetun_path)
+        logger.debug(f"Server files: {gluetun_servers_json}")
+
+        for server_file in gluetun_servers_json:
+            try:
+                with open(server_file) as f:
+                    js = json.load(f)
+            except (ValueError, OSError) as e:
+                logger.debug(f"{e}")
+                continue
+
+            for ep in js.get("servers", []):
+                if ipaddr in ep.get("ips", []):
+                    return ep.get("hostname")
+
+        logger.info(f"WARNING: gateway {ipaddr} not found")
+        return None
 
     def get_gw_ip(self):
         # This gets the ip address of the gateway we're connected to. Currently this is the
