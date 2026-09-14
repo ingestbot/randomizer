@@ -214,6 +214,7 @@ def influxdb_pub(vpn_gw_name, ipaddr_public):
         logger.debug(f"error: {e}")
         pass
 
+
 class Docker:
     def __init__(self):
         self.client = docker.from_env()
@@ -228,11 +229,7 @@ class Docker:
                 providers = env.split("=", 1)[1].strip('"').split(",")
                 break
 
-        servers_path = os.path.join(
-            gluetun_path,
-            "gluetun_config",
-            "servers"
-        )
+        servers_path = os.path.join(gluetun_path, "gluetun_config", "servers")
 
         return [
             os.path.join(servers_path, f"{provider.strip()}.json")
