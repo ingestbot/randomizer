@@ -135,22 +135,35 @@ else:
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-def send_request(method=None, url=None, data=None, headers=None, proxy=None, request_timeout=5):
+
+def send_request(
+    method=None, url=None, data=None, headers=None, proxy=None, request_timeout=5
+):
     r = None
     connection_timeout = 10  # seconds
     start_time = time.time()
 
-    proxies = {
-        "http": proxy,
-        "https": proxy,
-    } if proxy else None
+    proxies = (
+        {
+            "http": proxy,
+            "https": proxy,
+        }
+        if proxy
+        else None
+    )
 
     while True:
         try:
             if method == "get":
                 r = requests.get(url, proxies=proxies, timeout=request_timeout)
             elif method == "put":
-                r = requests.put(url, data=data, headers=headers, proxies=proxies, timeout=request_timeout)
+                r = requests.put(
+                    url,
+                    data=data,
+                    headers=headers,
+                    proxies=proxies,
+                    timeout=request_timeout,
+                )
             break
         except (requests.Timeout, requests.ConnectionError) as e:
             if time.time() > start_time + connection_timeout:
@@ -177,6 +190,7 @@ def send_request(method=None, url=None, data=None, headers=None, proxy=None, req
         response = "NOTOK"
 
     return response
+
 
 def influxdb_pub(vpn_gw_name, ipaddr_public):
     logger.info(f"Publishing details to influxdb...")
@@ -591,7 +605,9 @@ class vpn:
                 provider_name = item.split("=")[1]
                 return provider_name
 
-        logger.warning("VPN_SERVICE_PROVIDER not found or not defined in gluetun container env")
+        logger.warning(
+            "VPN_SERVICE_PROVIDER not found or not defined in gluetun container env"
+        )
         return None
 
     def shuffle_provider(self):
@@ -704,10 +720,13 @@ class vpn:
                     time.sleep(15)
                     attempts += 1
 
-            logger.warning(f"Could not find unique gateway after {max_attempts} attempts")
+            logger.warning(
+                f"Could not find unique gateway after {max_attempts} attempts"
+            )
             return gw_current
         else:
             return None
+
 
 class mqtt:
     def __init__(self):
