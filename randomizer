@@ -136,12 +136,11 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def send_request(method=None, url=None, data=None, headers=None, proxy=None):
-    #
-    # https://stackoverflow.com/questions/44448625/how-to-handle-a-connection-error-gracefully-in-requests
-    #
+def send_request(
+    method=None, url=None, data=None, headers=None, proxy=None, request_timeout=5
+):
     r = None
-    connection_timeout = 5
+    connection_timeout = 10  # seconds
     start_time = time.time()
 
     proxies = (
@@ -156,19 +155,27 @@ def send_request(method=None, url=None, data=None, headers=None, proxy=None):
     while True:
         try:
             if method == "get":
-                r = requests.get(url, proxies=proxies)
-            if method == "put":
-                r = requests.put(url, data=data, headers=headers, proxies=proxies)
+                r = requests.get(url, proxies=proxies, timeout=request_timeout)
+            elif method == "put":
+                r = requests.put(
+                    url,
+                    data=data,
+                    headers=headers,
+                    proxies=proxies,
+                    timeout=request_timeout,
+                )
             break
-        except ConnectionError as e:
+        except (requests.Timeout, requests.ConnectionError) as e:
             if time.time() > start_time + connection_timeout:
-                logger.debug(f"All request attempts have failed.")
-                logger.debug(f"{e}")
-                response = "NOTOK"
-                break
+                logger.debug(f"All request attempts have failed: {e}")
+                return "NOTOK"
             else:
-                logger.debug(f"Request timed out. Trying again.")
+                logger.debug(f"Request failed, retrying in 1s...")
                 time.sleep(1)
+        except Exception as e:
+            logger.error(f"Unexpected error in send_request: {e}")
+            return "NOTOK"
+
     if r and r.status_code == 200:
         if "application/json" in r.headers.get("Content-Type", ""):
             json_response = r.json()
@@ -562,11 +569,19 @@ class vpn:
         for line in container_logs.decode().splitlines():
             if "Connecting to" in line:
                 matches.append(line)
-        my_match = matches[-1]
-        ipaddr = re.findall(r"[0-9]+(?:\.[0-9]+){3}", my_match)
-        ipaddr = ipaddr[0]
+        if not matches:
+            logger.error("No 'Connecting to' logs found. Gluetun may not be connected.")
+            return None
 
-        return ipaddr
+        my_match = matches[-1]
+        # ipaddr = re.findall(r"[0-9]+(?:\.[0-9]+){3}", my_match)
+        ipaddr_list = re.findall(r"[0-9]+(?:\.[0-9]+){3}", my_match)
+
+        if not ipaddr_list:
+            logger.error(f"Could not extract IP from log: {my_match}")
+            return None
+
+        return ipaddr_list[0]
 
     def randomizer(self):
         if vpn().get_healthcheck() == "OK":
@@ -588,8 +603,12 @@ class vpn:
         for item in container.attrs["Config"]["Env"]:
             if re.match("VPN_SERVICE_PROVIDER", item):
                 provider_name = item.split("=")[1]
+                return provider_name
 
-        return provider_name
+        logger.warning(
+            "VPN_SERVICE_PROVIDER not found or not defined in gluetun container env"
+        )
+        return None
 
     def shuffle_provider(self):
         # https://stackoverflow.com/questions/6648493/how-to-open-a-file-for-both-reading-and-writing
@@ -630,9 +649,14 @@ class vpn:
 
         lines = [line.strip() for line in new_lines]
 
+        provider_name_new = None
         for line in lines:
             if "VPN_SERVICE_PROVIDER" in line:
                 provider_name_new = line.split("=", 1)[1]
+                break
+        if not provider_name_new:
+            logger.error("VPN_SERVICE_PROVIDER not found in .env file")
+            return
 
         logger.info(f"Current provider is: {provider_name_current}")
         logger.info(f"New provider is: {provider_name_new}")
@@ -673,18 +697,32 @@ class vpn:
         else:
             return None
 
-    def get_gw_new(self):
+    def get_gw_new(self, max_attempts=10):
         if mqtt_enable or mysql_enable:
             gw_other = self.get_gw_other()
-            while True:
+            if not gw_other:
+                logger.warning("No other gateways found, skipping unique gateway check")
+                return None
+
+            attempts = 0
+            while attempts < max_attempts:
                 gw_current = self.get_gw_name(self.get_gw_ip())
+                if gw_current is None:
+                    logger.error("Could not determine current gateway IP")
+                    return None
+
                 if gw_current not in gw_other:
-                    break
+                    logger.debug(f"{gw_current} is not in this list: {gw_other}")
+                    return gw_current
                 else:
+                    logger.debug(f"Gateway {gw_current} already in use, retrying...")
                     vpn().restart_vpn()
                     time.sleep(15)
+                    attempts += 1
 
-            logger.debug(f"{gw_current} is not in this list: {gw_other}")
+            logger.warning(
+                f"Could not find unique gateway after {max_attempts} attempts"
+            )
             return gw_current
         else:
             return None
