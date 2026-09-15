@@ -241,7 +241,9 @@ class Docker:
             for env in gluetun.attrs["Config"]["Env"]:
                 if env.startswith("UPDATER_VPN_SERVICE_PROVIDERS="):
                     provider_str = env.split("=", 1)[1].strip('"')
-                    providers = [p.strip() for p in provider_str.split(",") if p.strip()]
+                    providers = [
+                        p.strip() for p in provider_str.split(",") if p.strip()
+                    ]
                     break
         except (KeyError, AttributeError) as e:
             logger.error(f"Error parsing gluetun environment: {e}")
@@ -509,6 +511,7 @@ class Docker:
                 logger.info("docker_checkup failed")
         except Exception as e:
             logger.error(f"Unexpected error in docker_checkup_and_pub: {e}")
+
 
 class vpn:
     def __init__(self):
