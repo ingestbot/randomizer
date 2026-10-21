@@ -686,7 +686,7 @@ class vpn:
 
                 if cities:
                     random.shuffle(cities)
-                    shuffled_value = '"' + ", ".join(cities) + '"\n'
+                    shuffled_value = '"' + ",".join(cities) + '"\n'
                     line = f"{key}={shuffled_value}"
 
             new_lines.append(line)
